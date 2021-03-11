@@ -1,5 +1,9 @@
 @import "https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css";
 
+html {
+  overscroll-behavior: none;
+}
+
 #gh_logo {
   position: absolute;
   top: 1vh;
@@ -12,7 +16,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  overscroll-behavior: none;
 }
 
 #board {
