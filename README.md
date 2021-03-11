@@ -1,5 +1,7 @@
 # Knight's Tour Around the Queen
 
+[**Play Here**](https://knightpuzzle.ihtfy.com/)
+
 - The knight starts on h8, and the queen is permanently on d5.
 
 - The knight must visit each square on the board from right to left, top to bottom.
