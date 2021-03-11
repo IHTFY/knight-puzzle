@@ -1,6 +1,7 @@
 let nextTarget = 'f8';
 let showTargets = true;
 let showTimer = false;
+let timerInterval;
 
 function inQVision(square) {
   // Queen on d5;
@@ -30,7 +31,7 @@ function getNextTarget(prev) {
       let ms = Math.trunc(t_end - t_start);
       let duration = new Date(ms).toISOString().substr(11, 8);
       console.log('Success!');
-      clearInterval(updateTimer);
+      clearInterval(timerInterval);
       t_start = performance.now();
     }
   }
@@ -87,15 +88,17 @@ document.getElementById('reset').addEventListener('click', () => {
   clearHighlights();
   highlightSquare(nextTarget);
   t_start = performance.now();
+  timerInterval = setInterval(updateTimer, 1000);
 });
 
-let updateTimer = setInterval(() => {
+function updateTimer() {
   let t_end = performance.now();
   let ms = Math.trunc(t_end - t_start);
   let duration = new Date(ms).toISOString().substr(11, 8);
-
   document.getElementById('timerDisplay').textContent = duration;
-}, 1000);
+}
+
+timerInterval = setInterval(updateTimer, 1000);
 
 const showTimerButton = document.getElementById('showTimer');
 showTimerButton.addEventListener('click', () => {
