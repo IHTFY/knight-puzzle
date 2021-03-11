@@ -6,7 +6,7 @@
   right: 1vw;
 }
 
-#container {
+#boardContainer {
   height: min(80vh, 80vw);
   width: min(80vh, 80vw);
   display: flex;
