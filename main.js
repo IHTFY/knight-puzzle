@@ -1,6 +1,5 @@
 let nextTarget = 'f8';
 let showTargets = true;
-let showTimer = false;
 let timerInterval;
 
 function inQVision(square) {
@@ -31,6 +30,7 @@ function getNextTarget(prev) {
       let ms = Math.trunc(t_end - t_start);
       let duration = new Date(ms).toISOString().substr(11, 8);
       console.log('Success!');
+      document.getElementById('timerDisplay').classList.remove('is-hidden');
       clearInterval(timerInterval);
       t_start = performance.now();
     }
@@ -64,7 +64,7 @@ let config = {
       return false;
     }
   },
-  onDrop: (source, target, piece) => {
+  onDrop: (source, target) => {
     // snapback if attacked by queen (or capturing), or illegal
     if (inQVision(target) || !legalKnight(source, target)) {
       return "snapback";
@@ -72,6 +72,7 @@ let config = {
     if (target === nextTarget) {
       nextTarget = getNextTarget(nextTarget);
       clearHighlights();
+      showQV();
       highlightSquare(nextTarget);
     }
   },
@@ -86,6 +87,7 @@ document.getElementById('reset').addEventListener('click', () => {
   board.position('7N/8/8/3q4/8/8/8/8 w - - 0 1');
   nextTarget = 'f8';
   clearHighlights();
+  showQV();
   highlightSquare(nextTarget);
   t_start = performance.now();
   timerInterval = setInterval(updateTimer, 1000);
@@ -120,7 +122,26 @@ showTargetButton.addEventListener('click', () => {
   }
 });
 
+let qv = false;
+
+function showQV() {
+  let color = qv ? '#202020' : '';
+  for (let j of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+    for (let i = 1; i <= 8; i++) {
+      if (inQVision(j + i)) {
+        $(`#board .square-${j + i}`).css('background-color', color);
+      }
+    }
+  }
+}
+
+document.getElementById('queenVision').addEventListener('click', () => {
+  qv = !qv;
+  showQV();
+})
+
 $(window).resize(() => {
   board.resize();
   highlightSquare(nextTarget);
+  showQV();
 });
