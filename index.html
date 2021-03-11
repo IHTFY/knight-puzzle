@@ -11,23 +11,28 @@
     <script defer src="main.js"></script>
   </head>
   <body>
-    <div id="container" class="block">
-      <div id="board"></div>
-    </div>
-    <div class="columns">
-      <div class="column">
-        <button class="button is-danger is-light" id="reset">Reset</button>
+    <div class="container">
+      <div id="boardContainer" class="block container">
+        <div id="board"></div>
       </div>
-      <!-- <div class="column">
-        <label class="checkbox">
-          <input type="checkbox" />
-          Show Timer
-        </label>
-        <label class="checkbox">
-          <input type="checkbox" />
-          Show Target
-        </label>
-      </div> -->
+      <div class="columns is-centered">
+        <div class="column is-one-quarter">
+          <button class="button is-danger is-light mr" id="reset">Reset</button>
+        </div>
+        <div class="column is-one-quarter">
+          <p class="has-text-weight-bold is-size-3" id="timerDisplay">00:00:00</p>
+        </div>
+        <div class="column is-one-quarter">
+          <button class="button is-info is-light" id="showTimer">
+            Timer
+          </button>
+        </div>
+        <div class="column is-one-quarter">
+          <button class="button is-info is-light" id="showTarget">
+            Hide Target
+          </button>
+        </div>
+      </div>
     </div>
     <a href="https://github.com/IHTFY/knight-puzzle">
       <svg id="gh_logo" height="32" width="32" viewBox="0 0 32 32">

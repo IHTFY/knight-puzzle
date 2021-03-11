@@ -1,4 +1,6 @@
 let nextTarget = 'f8';
+let showTargets = true;
+let showTimer = false;
 
 function inQVision(square) {
   // Queen on d5;
@@ -20,19 +22,15 @@ function getNextTarget(prev) {
   let file = prev.charCodeAt(0);
   let rank = prev[1];
 
-  // decrement h to a (104-97)
-  // when wrapping, decrement 8-1, then wrap around to 8, give success
-  // h8
-
   if (--file < 97) {
     file = 104;
     if (--rank < 1) {
-      rank = 8;
+      // rank = 8;
       let t_end = performance.now();
       let ms = Math.trunc(t_end - t_start);
       let duration = new Date(ms).toISOString().substr(11, 8);
       console.log('Success!');
-      alert(`Completed in ${duration}`);
+      clearInterval(updateTimer);
       t_start = performance.now();
     }
   }
@@ -50,8 +48,9 @@ function clearHighlights() {
 }
 
 function highlightSquare(square) {
-  const red = '#FF0000';
-  $(`#board .square-${square}`).css('background', red);
+  if (showTargets) {
+    $(`#board .square-${square}`).css('background', '#FF0000');
+  }
 }
 
 let config = {
@@ -88,6 +87,34 @@ document.getElementById('reset').addEventListener('click', () => {
   clearHighlights();
   highlightSquare(nextTarget);
   t_start = performance.now();
+});
+
+let updateTimer = setInterval(() => {
+  let t_end = performance.now();
+  let ms = Math.trunc(t_end - t_start);
+  let duration = new Date(ms).toISOString().substr(11, 8);
+
+  document.getElementById('timerDisplay').textContent = duration;
+}, 1000);
+
+const showTimerButton = document.getElementById('showTimer');
+showTimerButton.addEventListener('click', () => {
+  document.getElementById('timerDisplay').classList.toggle('is-hidden');
+});
+
+const showTargetButton = document.getElementById('showTarget');
+showTargetButton.addEventListener('click', () => {
+  if (showTargets) {
+    // turn off
+    showTargets = false;
+    showTargetButton.textContent = 'Show Target';
+    clearHighlights();
+  } else {
+    // turn on
+    showTargets = true;
+    showTargetButton.textContent = 'Hide Target';
+    highlightSquare(nextTarget);
+  }
 });
 
 $(window).resize(() => {
