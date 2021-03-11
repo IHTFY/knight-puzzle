@@ -90,4 +90,7 @@ document.getElementById('reset').addEventListener('click', () => {
   t_start = performance.now();
 });
 
-$(window).resize(board.resize);
+$(window).resize(() => {
+  board.resize();
+  highlightSquare(nextTarget);
+});
