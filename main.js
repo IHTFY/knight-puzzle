@@ -89,3 +89,5 @@ document.getElementById('reset').addEventListener('click', () => {
   highlightSquare(nextTarget);
   t_start = performance.now();
 });
+
+$(window).resize(board.resize);
