@@ -29,7 +29,6 @@ function getNextTarget(prev) {
       let t_end = performance.now();
       let ms = Math.trunc(t_end - t_start);
       let duration = new Date(ms).toISOString().substr(11, 8);
-      console.log('Success!');
       document.getElementById('timerDisplay').classList.remove('is-hidden');
       clearInterval(timerInterval);
       t_start = performance.now();
@@ -56,6 +55,7 @@ function highlightSquare(square) {
 
 let moveCount = document.getElementById('moveCount');
 let targetCount = document.getElementById('targetsHit');
+let t_start = performance.now();
 
 let config = {
   draggable: true,
@@ -83,22 +83,28 @@ let config = {
   onChange: () => {
     moveCount.textContent = parseInt(moveCount.textContent) + 1;
   },
+  onDragMove: () => {
+    if (moveCount.textContent.trim() === '0' && !timerInterval) {
+      t_start = performance.now();
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+  },
 };
 var board = Chessboard("board", config);
 highlightSquare(nextTarget);
 
-let t_start = performance.now();
-
 document.getElementById('reset').addEventListener('click', () => {
   board.position('7N/8/8/3q4/8/8/8/8 w - - 0 1');
   nextTarget = 'f8';
-  moveCount.textContent = 0;
-  targetCount.textContent = 0;
+  moveCount.textContent = '0';
+  targetCount.textContent = '0';
   clearHighlights();
   showQV();
   highlightSquare(nextTarget);
   t_start = performance.now();
-  timerInterval = setInterval(updateTimer, 1000);
+  clearInterval(timerInterval);
+  timerInterval = null;
+  updateTimer();
 });
 
 function updateTimer() {
@@ -107,8 +113,6 @@ function updateTimer() {
   let duration = new Date(ms).toISOString().substr(11, 8);
   document.getElementById('timerDisplay').textContent = duration;
 }
-
-timerInterval = setInterval(updateTimer, 1000);
 
 const showTimerButton = document.getElementById('showTimer');
 showTimerButton.addEventListener('click', () => {
