@@ -54,6 +54,9 @@ function highlightSquare(square) {
   }
 }
 
+let moveCount = document.getElementById('moveCount');
+let targetCount = document.getElementById('targetsHit');
+
 let config = {
   draggable: true,
   pieceTheme:
@@ -70,13 +73,16 @@ let config = {
       return "snapback";
     }
     if (target === nextTarget) {
+      targetCount.textContent = parseInt(targetCount.textContent) + 1;
       nextTarget = getNextTarget(nextTarget);
       clearHighlights();
       showQV();
       highlightSquare(nextTarget);
     }
   },
-
+  onChange: () => {
+    moveCount.textContent = parseInt(moveCount.textContent) + 1;
+  },
 };
 var board = Chessboard("board", config);
 highlightSquare(nextTarget);
@@ -86,6 +92,8 @@ let t_start = performance.now();
 document.getElementById('reset').addEventListener('click', () => {
   board.position('7N/8/8/3q4/8/8/8/8 w - - 0 1');
   nextTarget = 'f8';
+  moveCount.textContent = 0;
+  targetCount.textContent = 0;
   clearHighlights();
   showQV();
   highlightSquare(nextTarget);
