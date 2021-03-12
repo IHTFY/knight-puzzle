@@ -12,32 +12,53 @@
   </head>
   <body>
     <div class="container">
-      <h1 class="title is-1 has-text-white has-text-centered">Knight Around the Queen</h1>
+      <h1 class="title is-1 has-text-white has-text-centered">
+        Knight Around the Queen
+      </h1>
 
       <div id="boardContainer" class="block container">
         <div id="board"></div>
       </div>
+
       <div class="columns is-centered">
-        <div class="column is-one-quarter has-text-centered">
-          <button class="button is-danger" id="reset">Reset</button>
-        </div>
         <div class="column has-text-centered">
-          <p class="has-text-weight-bold is-size-3 has-text-white" id="timerDisplay">
-            00:00:00
-          </p>
+          <div class="block">
+            <button class="button is-danger" id="reset">Reset</button>
+            <p
+              class="has-text-weight-bold is-size-3 has-text-white"
+              id="moveCount"
+            >
+              0
+            </p>
+          </div>
         </div>
+
         <div class="column has-text-centered">
-          <button class="button is-info" id="showTimer">Timer</button>
+          <div class="block">
+            <button class="button is-info" id="showTimer">Timer</button>
+            <p
+              class="has-text-weight-bold is-size-3 has-text-white"
+              id="timerDisplay"
+            >
+              00:00:00
+            </p>
+          </div>
         </div>
+
         <div class="column has-text-centered">
-          <button class="button is-info" id="showTarget">
-            Hide Target
-          </button>
+          <div class="block">
+            <button class="button is-info" id="showTarget">Hide Target</button>
+            <p
+              class="has-text-weight-bold is-size-3 has-text-white"
+              id="targetsHit"
+            >
+              0
+            </p>
+          </div>
         </div>
+
         <div class="column has-text-centered">
-          <button class="button is-info" id="queenVision">
-            Queen Vision
-          </button>
+          <button class="button is-info" id="queenVision">Queen Vision</button>
         </div>
       </div>
     </div>
