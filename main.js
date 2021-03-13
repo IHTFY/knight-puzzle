@@ -352,7 +352,9 @@ let config = {
       return "snapback";
     }
     movesDisplay.textContent = ++moveCount;
-    stats[targetCount + 1].moves++;
+    if (stats[targetCount + 1]) {
+      stats[targetCount + 1].moves++;
+    }
     if (target === nextTarget) {
       targetCountDisplay.textContent = ++targetCount;
       stats[targetCount].time = performance.now();
