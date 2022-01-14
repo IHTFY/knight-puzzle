@@ -427,7 +427,7 @@ let qv = false;
 
 function showQV() {
   let color = qv ? '#202020' : '';
-  for (let j of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+  for (let j of 'abcdefgh') {
     for (let i = 1; i <= 8; i++) {
       if (inQVision(j + i)) {
         $(`#board .square-${j + i}`).css('background-color', color);
