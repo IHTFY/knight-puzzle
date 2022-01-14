@@ -11,6 +11,30 @@ html {
   right: 1vw;
 }
 
+thead > tr {
+  background-color: #201020;
+}
+
+.table thead > tr > th {
+  color: #fff;
+}
+
+.table th {
+  color: #fff;
+}
+
+tbody {
+  color: #fff;
+}
+
+tbody > tr:nth-child(even) {
+  background-color: #3c4f77;
+}
+
+tbody > tr:nth-child(odd) {
+  background-color: #26314b;
+}
+
 #boardContainer {
   height: min(80vh, 80vw);
   width: min(80vh, 80vw);
