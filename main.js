@@ -162,7 +162,7 @@ let stats = [
   {
     square: 'a4',
     moves: 0,
-    optimal: 7,
+    optimal: 5,
     time: 0,
     split: 0,
   },
