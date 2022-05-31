@@ -36,8 +36,8 @@ tbody > tr:nth-child(odd) {
 }
 
 #boardContainer {
-  height: min(80vh, 80vw);
-  width: min(80vh, 80vw);
+  height: min(calc(100vh - 108px), 100vw);
+  width: min(calc(100vh - 108px), 100vw);
   display: flex;
   justify-content: center;
   align-items: center;
