@@ -7,8 +7,8 @@ html {
 
 #gh_logo {
   position: fixed;
-  bottom: 1vh;
-  right: 1vw;
+  top: 6px;
+  left: 6px;
 }
 
 thead > tr {
