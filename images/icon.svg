@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="96" fill="#14182a"/>
+<g transform="translate(0 10)">
+<clipPath id="c"><path d="M150 108Q256 62 362 108L370 300Q370 382 302 414Q256 430 210 414Q142 382 142 300Z"/></clipPath>
+<g clip-path="url(#c)">
+<path d="M120 40H256V196H120Z" fill="#d9e0e8"/><path d="M256 40H400V196H256Z" fill="#aab4c1"/>
+<path d="M120 236H256V440H120Z" fill="#c6ced8"/><path d="M256 236H400V440H256Z" fill="#8995a5"/>
+<path d="M120 236 256 236 256 440 120 300Z" fill="#d2d9e2"/><path d="M400 236 256 236 256 440 400 300Z" fill="#97a2b1"/>
+<path d="M120 196H256V236H120Z" fill="#f2cf6b"/><path d="M256 196H400V236H256Z" fill="#c99a2e"/>
+</g>
+<path d="M236 104 256 84 256 418 236 412Z" fill="#f2cf6b"/><path d="M256 84 276 104 276 412 256 418Z" fill="#b8892a"/>
+<g fill="#0b0d16"><path d="M166 208H228L224 224H170Z"/><path d="M284 208H346L342 224H288Z"/>
+<path d="M178 270h12l-2 44h-8zM204 276h12l-2 50h-8zM322 270h12l-2 44h-8zM296 276h12l-2 50h-8z"/></g>
+</g>
+</svg>

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
 
-function game() {
+function game(globals = {}) {
   const elements = new Map();
   const colors = new Map();
   const intervals = new Set();
@@ -25,7 +25,7 @@ function game() {
     return elements.get(id);
   }
   const context = vm.createContext({
-    document: { getElementById: element }, window: {},
+    document: { getElementById: element, addEventListener() {} }, window: {},
     performance: { now: () => now },
     setInterval(fn) { intervals.add(fn); return fn; },
     clearInterval(fn) { intervals.delete(fn); },
@@ -37,6 +37,7 @@ function game() {
       },
       resize() {},
     }),
+    ...globals,
   });
   const run = code => vm.runInContext(code, context);
   run(readFileSync(new URL('../main.js', `file://${__filename}`), 'utf8'));
@@ -138,4 +139,53 @@ test('hiding targets preserves Queen Vision, including after reset', () => {
   assert.equal(g.colors.get('#board .square-d5'), '#202020');
   g.element('showTarget').click();
   assert.equal(g.colors.get('#board .square-f8'), '#FF0000');
+});
+
+test('app updates wait until no game is in progress', async () => {
+  const listeners = {};
+  const posted = [];
+  let reloads = 0;
+  const registration = {
+    waiting: null,
+    addEventListener(event, handler) { listeners[event] = handler; },
+    update: async () => {},
+  };
+  const serviceWorker = {
+    controller: {},
+    addEventListener(event, handler) { listeners[event] = handler; },
+    register: async () => registration,
+  };
+  const g = game({ navigator: { serviceWorker }, location: { reload: () => reloads++ } });
+  await new Promise(setImmediate);
+
+  // Start a game, then a new version finishes installing.
+  g.run("config.onDrop('h8', 'g6')");
+  const installing = { state: 'installing', addEventListener(event, handler) { this.onchange = handler; } };
+  registration.installing = installing;
+  listeners.updatefound();
+  installing.state = 'installed';
+  registration.waiting = { postMessage: message => posted.push(message) };
+  installing.onchange();
+  assert.deepEqual(posted, [], 'no update while a game is in progress');
+
+  // Another tab activates it: still no reload mid-game.
+  listeners.controllerchange();
+  assert.equal(reloads, 0);
+
+  // Resetting applies the update.
+  g.element('reset').click();
+  assert.equal(reloads, 1);
+});
+
+test('a waiting update is activated straight away when idle', async () => {
+  const posted = [];
+  const registration = {
+    waiting: { postMessage: message => posted.push(message) },
+    addEventListener() {},
+    update: async () => {},
+  };
+  const serviceWorker = { controller: {}, addEventListener() {}, register: async () => registration };
+  game({ navigator: { serviceWorker }, location: { reload() {} } });
+  await new Promise(setImmediate);
+  assert.deepEqual(posted, ['skipWaiting']);
 });

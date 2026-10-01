@@ -7,32 +7,24 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#3c4f77" />
+    <meta name="description" content="Guide the knight to every safe square around the queen, in order, as quickly as possible." />
+    <meta name="theme-color" content="#201020" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Knight Puzzle" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="manifest.json" />
 
     <title>Knight Puzzle</title>
-    <link rel="icon" href="favicon.png" />
+    <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" href="images/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
     <script src="jquery.min.js"></script>
     <script src="chessboard.js"></script>
     <script defer src="main.js"></script>
   </head>
   <body>
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("./service-worker.js")
-            .then((reg) => {
-              console.log("Service worker registered.", reg);
-            })
-            .catch((err) => {
-              console.error("Service worker not registered.", err);
-            });
-        });
-      }
-    </script>
-
     <div class="app">
       <header class="head">
         <a

@@ -1,40 +1,63 @@
 {
+  "id": "./",
   "name": "Knight Around the Queen",
   "short_name": "Knight Puzzle",
+  "description": "Guide the knight to every safe square around the queen, in order, as quickly as possible.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#201020",
+  "theme_color": "#201020",
+  "categories": ["games", "education"],
   "icons": [
     {
-      "src": "./images/128.png",
-      "sizes": "128x128",
-      "type": "image/png"
+      "src": "images/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
-      "src": "./images/144.png",
-      "sizes": "144x144",
-      "type": "image/png"
-    },
-    {
-      "src": "./images/152.png",
-      "sizes": "152x152",
-      "type": "image/png"
-    },
-    {
-      "src": "./images/192.png",
+      "src": "images/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "./images/256.png",
-      "sizes": "256x256",
-      "type": "image/png"
-    },
-    {
-      "src": "./images/512.png",
+      "src": "images/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "images/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#201020",
-  "theme_color": "#3c4f77"
+  "screenshots": [
+    {
+      "src": "images/screenshots/narrow.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Knight puzzle board on a phone"
+    },
+    {
+      "src": "images/screenshots/wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Knight puzzle board with controls on a desktop"
+    }
+  ]
 }
