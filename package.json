@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test": "node --test",
-    "check": "node --check main.js && node --check service-worker.js && node --test"
+    "check": "node --check main.js && node --check service-worker.js && node --check scripts/stamp-service-worker.cjs && node --test",
+    "stamp": "node scripts/stamp-service-worker.cjs"
   },
   "engines": { "node": ">=22" }
 }

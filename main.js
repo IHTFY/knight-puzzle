@@ -157,6 +157,7 @@ document.getElementById('reset').addEventListener('click', () => {
   timerInterval = null;
   updateTimer();
   updateStatsDisplay();
+  applyPendingUpdate();
 });
 
 function updateTimer() {
@@ -210,4 +211,38 @@ $(window).resize(resizeBoard);
 // The board sizes itself to its container, which can change without a window resize.
 if (typeof ResizeObserver !== 'undefined') {
   new ResizeObserver(resizeBoard).observe(document.getElementById('boardContainer'));
+}
+
+// Offline support. A new app version is applied only between games so a reload never loses a run.
+let swRegistration = null;
+let controllerChanged = false;
+function applyPendingUpdate() {
+  if (moveCount !== 0 || !swRegistration) return;
+  if (controllerChanged) location.reload();
+  else if (swRegistration.waiting && navigator.serviceWorker.controller) {
+    swRegistration.waiting.postMessage('skipWaiting');
+  }
+}
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // The first install takes control without a reload; later ones swap in the new version.
+    if (!hadController) return;
+    controllerChanged = true;
+    applyPendingUpdate();
+  });
+  navigator.serviceWorker.register('./service-worker.js').then(registration => {
+    swRegistration = registration;
+    registration.addEventListener('updatefound', () => {
+      const worker = registration.installing;
+      worker?.addEventListener('statechange', () => {
+        if (worker.state === 'installed') applyPendingUpdate();
+      });
+    });
+    applyPendingUpdate();
+    // Installed apps can stay open for days, so check for updates when brought back.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') registration.update().catch(() => {});
+    });
+  }).catch(err => console.error('Service worker not registered.', err));
 }

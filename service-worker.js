@@ -1,8 +1,9 @@
 'use strict';
 
-// Bump this version whenever a precached file changes.
+// Content hash of FILES_TO_CACHE; `npm run stamp` updates it and `npm test` fails if it is stale.
+const CACHE_VERSION = '3659abed9a11';
 const CACHE_PREFIX = 'knight-puzzle-';
-const CACHE_NAME = `${CACHE_PREFIX}v3`;
+const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const FILES_TO_CACHE = [
   './index.html',
   './chessboard.js',
@@ -11,23 +12,30 @@ const FILES_TO_CACHE = [
   './styles.css',
   './bulma@0.9.4.css',
   './manifest.json',
-  './favicon.png',
+  './favicon.ico',
+  './images/icon.svg',
+  './images/icon-192.png',
+  './images/icon-512.png',
+  './images/icon-maskable-192.png',
+  './images/icon-maskable-512.png',
+  './images/apple-touch-icon.png',
   './images/pieces/wN.svg',
   './images/pieces/bQ.svg',
   // chessboard.js initializes its hidden drag image with a white pawn.
   './images/pieces/wP.svg',
-  './images/128.png',
-  './images/144.png',
-  './images/152.png',
-  './images/192.png',
-  './images/256.png',
-  './images/512.png',
 ];
 const assetURLs = new Set(FILES_TO_CACHE.map(path => new URL(path, self.registration.scope).href));
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE)));
-  // Let an existing game finish before activating a new app version.
+  // Bypass the HTTP cache so a new version never precaches stale files.
+  event.waitUntil(caches.open(CACHE_NAME).then(cache =>
+    cache.addAll(FILES_TO_CACHE.map(path => new Request(path, { cache: 'reload' })))
+  ));
+  // Don't skip waiting here: the page asks for it once no game is in progress.
+});
+
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -46,12 +54,13 @@ self.addEventListener('fetch', event => {
   const scope = self.registration.scope;
   const isAppNavigation = event.request.mode === 'navigate' &&
     (url.origin + url.pathname === scope || url.origin + url.pathname === new URL('index.html', scope).href);
-  if (!isAppNavigation && !assetURLs.has(url.href)) return;
+  const assetURL = url.origin + url.pathname;
+  if (!isAppNavigation && !assetURLs.has(assetURL)) return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     // Keep the HTML and its assets on the same version, including while offline.
-    const cached = await cache.match(isAppNavigation ? new URL('index.html', scope).href : event.request);
+    const cached = await cache.match(isAppNavigation ? new URL('index.html', scope).href : assetURL);
     return cached || fetch(event.request);
   })());
 });
