@@ -23,6 +23,18 @@ With Node.js 22 or newer, run `npm run check` for syntax checks and the regressi
 tests (or `npm test` for tests alone). Tests cover target order, shortest move
 counts, move validation, completion/reset, highlights, and offline caching.
 
+## Offline app (PWA)
+
+The game installs as an app and works fully offline. `service-worker.js` precaches
+every file in `FILES_TO_CACHE`, and its cache name is a hash of those files.
+After changing any precached file (or the list), run `npm run stamp`; the tests fail
+if the stamp is stale. Installed copies download the new version in the background
+and switch to it at the next idle moment (page load or Reset), never mid-game.
+
+Icons are drawn in `images/icon.svg` (rounded) and `images/icon-maskable.svg`
+(full-bleed, helm inside the maskable safe zone). The PNGs, `favicon.ico`, and
+`images/screenshots/` are rendered from those and the live app with headless Chromium.
+
 ## Vendored dependencies
 
 - jQuery 3.7.1: <https://code.jquery.com/jquery-3.7.1.min.js>
