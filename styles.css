@@ -1,4 +1,4 @@
-@import "/bulma@0.9.1.css";
+@import "./bulma@0.9.4.css";
 
 html {
   overscroll-behavior: none;
