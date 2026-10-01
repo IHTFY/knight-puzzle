@@ -2,7 +2,7 @@
 
 // Bump this version whenever a precached file changes.
 const CACHE_PREFIX = 'knight-puzzle-';
-const CACHE_NAME = `${CACHE_PREFIX}v2`;
+const CACHE_NAME = `${CACHE_PREFIX}v3`;
 const FILES_TO_CACHE = [
   './index.html',
   './chessboard.js',
