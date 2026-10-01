@@ -48,6 +48,7 @@ let moveCount = 0;
 let targetCount = 0;
 let t_start = null;
 
+const statsPanel = document.getElementById('statsPanel');
 const statsDisplay = document.getElementById('statsDisplay');
 const movesDisplay = document.getElementById('moveCount');
 const targetCountDisplay = document.getElementById('targetsHit');
@@ -194,10 +195,19 @@ document.getElementById('queenVision').addEventListener('click', () => {
 });
 
 document.getElementById('statsButton').addEventListener('click', () => {
-  statsDisplay.parentElement.classList.toggle('is-hidden');
+  statsPanel.classList.toggle('is-hidden');
 });
 
-$(window).resize(() => {
+statsPanel.addEventListener('click', event => {
+  if (event.target === statsPanel) statsPanel.classList.add('is-hidden');
+});
+
+function resizeBoard() {
   board.resize();
   renderHighlights();
-});
+}
+$(window).resize(resizeBoard);
+// The board sizes itself to its container, which can change without a window resize.
+if (typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(resizeBoard).observe(document.getElementById('boardContainer'));
+}

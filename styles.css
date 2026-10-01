@@ -5,12 +5,6 @@ html {
   background-color: #201020;
 }
 
-#gh_logo {
-  position: fixed;
-  top: 6px;
-  left: 6px;
-}
-
 thead > tr {
   background-color: #201020;
 }
@@ -35,18 +29,210 @@ tbody > tr:nth-child(odd) {
   background-color: #26314b;
 }
 
-#boardContainer {
-  height: min(calc(100vh - 108px), 100vw);
-  width: min(calc(100vh - 108px), 100vw);
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  background-color: #201020;
+  color: #fff;
+}
+
+.app {
+  --pad: 8px;
+  height: 100vh;
+  height: 100dvh;
+  box-sizing: border-box;
+  padding: max(var(--pad), env(safe-area-inset-top))
+    max(var(--pad), env(safe-area-inset-right))
+    max(var(--pad), env(safe-area-inset-bottom))
+    max(var(--pad), env(safe-area-inset-left));
+  display: grid;
+  gap: var(--pad);
+  width: 100%;
+  /* Portrait: title, board, controls */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "head" "stage" "panel";
+}
+
+.head {
+  grid-area: head;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.gh {
+  display: flex;
+  flex: none;
+}
+
+.title-text {
+  margin: 0;
+  font-size: clamp(1.1rem, 5.5vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.stage {
+  grid-area: stage;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#boardContainer {
+  container-type: size;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   touch-action: none;
 }
 
 #board {
-  width: 100%;
-  height: 100%;
+  /* chessboard.js adds a 2px border on each side */
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+}
+
+.controls {
+  grid-area: panel;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px var(--pad);
+  align-items: end;
+  text-align: center;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cell .button {
+  max-width: 100%;
+}
+
+.value {
+  font-size: clamp(1.1rem, 4.5vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Landscape: board on the left, title and controls in a side column */
+@media (orientation: landscape) {
+  .app {
+    /* keep the board and controls together on widescreens */
+    max-width: calc(100dvh + 26rem);
+    margin-inline: auto;
+    grid-template-columns: minmax(0, 1fr) clamp(10.5rem, 24vw, 22rem);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "stage head" "stage panel";
+  }
+
+  .head {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .title-text {
+    font-size: clamp(1rem, 2.4vw, 2rem);
+  }
+
+  .controls {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cell {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .cell:nth-child(n + 4) .button {
+    width: 100%;
+  }
+
+  .value {
+    font-size: clamp(1.1rem, 2.4vw, 1.75rem);
+  }
+}
+
+/* Very short landscape (phones): drop the title to give the board room */
+@media (orientation: landscape) and (max-height: 480px) {
+  .title-text {
+    display: none;
+  }
+
+  .app {
+    --pad: 6px;
+  }
+
+  .controls {
+    gap: 5px;
+  }
+
+  .button {
+    height: 2rem;
+    padding: 0 0.75em;
+  }
+}
+
+.stats-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.stats-overlay.is-hidden {
+  display: none;
+}
+
+.stats-box {
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 6px;
+  background: #201020;
+}
+
+.stats-box .table {
+  margin: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.stats-box thead th {
+  position: sticky;
+  top: 0;
+  background-color: #201020;
 }
 
 .clearfix-7da63 {
