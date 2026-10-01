@@ -1,0 +1,9 @@
+{
+  "name": "knight-puzzle",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check main.js && node --check service-worker.js && node --test"
+  },
+  "engines": { "node": ">=22" }
+}

@@ -1,285 +1,64 @@
-let nextTarget = 'f8';
+const initialPosition = '7N/8/8/3q4/8/8/8/8 w - - 0 1';
+// Target order and best move counts are shared by gameplay and the stats table.
+const targets = [
+  { square: 'h8', optimal: 0 },
+  { square: 'f8', optimal: 2 },
+  { square: 'e8', optimal: 3 },
+  { square: 'c8', optimal: 6 },
+  { square: 'b8', optimal: 9 },
+  { square: 'h7', optimal: 5 },
+  { square: 'g7', optimal: 3 },
+  { square: 'e7', optimal: 6 },
+  { square: 'c7', optimal: 6 },
+  { square: 'a7', optimal: 8 },
+  { square: 'h6', optimal: 8 },
+  { square: 'g6', optimal: 5 },
+  { square: 'f6', optimal: 3 },
+  { square: 'b6', optimal: 6 },
+  { square: 'a6', optimal: 7 },
+  { square: 'h4', optimal: 7 },
+  { square: 'g4', optimal: 5 },
+  { square: 'f4', optimal: 3 },
+  { square: 'b4', optimal: 6 },
+  { square: 'a4', optimal: 5 },
+  { square: 'h3', optimal: 4 },
+  { square: 'g3', optimal: 3 },
+  { square: 'e3', optimal: 2 },
+  { square: 'c3', optimal: 4 },
+  { square: 'a3', optimal: 2 },
+  { square: 'h2', optimal: 4 },
+  { square: 'f2', optimal: 2 },
+  { square: 'e2', optimal: 3 },
+  { square: 'c2', optimal: 4 },
+  { square: 'b2', optimal: 5 },
+  { square: 'g1', optimal: 4 },
+  { square: 'f1', optimal: 3 },
+  { square: 'e1', optimal: 3 },
+  { square: 'c1', optimal: 6 },
+  { square: 'b1', optimal: 3 },
+  { square: 'a1', optimal: 3 },
+];
+const stats = targets.map(target => ({ ...target, moves: 0, time: 0, split: 0 }));
+let nextTarget = targets[1].square;
 let showTargets = true;
-let timerInterval;
+let qv = false;
+let finished = false;
+let timerInterval = null;
 let moveCount = 0;
 let targetCount = 0;
+let t_start = null;
 
-let statsDisplay = document.getElementById('statsDisplay');
+const statsDisplay = document.getElementById('statsDisplay');
+const movesDisplay = document.getElementById('moveCount');
+const targetCountDisplay = document.getElementById('targetsHit');
+const timerDisplay = document.getElementById('timerDisplay');
 
-function updateStatsDisplay(stats) {
-  let rows = [...statsDisplay.children];
-  for (let i = 0; i < stats.length; i++) {
-    rows[i].children[0].textContent = stats[i].square;
-    rows[i].children[1].textContent = stats[i].optimal;
-    rows[i].children[2].textContent = stats[i].moves;
-    rows[i].children[3].textContent = stats[i].split;
-  }
-
-  // for (let obj of stats) {
-  //   let tr = document.createElement('tr');
-  //   tr.innerHTML = `<th>${obj.square}</th>
-  //   <td>${obj.optimal}</td>
-  //   <td>${obj.moves}</td>
-  //   <td>${obj.split}</td>`;
-  //   statsDisplay.appendChild(tr);
-  // }
+function updateStatsDisplay() {
+  statsDisplay.innerHTML = stats.map(stat => `<tr>
+    <th>${stat.square}</th><td>${stat.optimal}</td>
+    <td>${stat.moves}</td><td>${stat.split}</td>
+  </tr>`).join('');
 }
-
-let stats = [
-  {
-    square: 'h8',
-    moves: 0,
-    optimal: 0,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'f8',
-    moves: 0,
-    optimal: 2,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'd8',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'c8',
-    moves: 0,
-    optimal: 6,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'b8',
-    moves: 0,
-    optimal: 9,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'h7',
-    moves: 0,
-    optimal: 5,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'g7',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'e7',
-    moves: 0,
-    optimal: 6,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'c7',
-    moves: 0,
-    optimal: 6,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'a7',
-    moves: 0,
-    optimal: 8,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'h6',
-    moves: 0,
-    optimal: 8,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'g6',
-    moves: 0,
-    optimal: 5,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'f6',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'b6',
-    moves: 0,
-    optimal: 6,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'a6',
-    moves: 0,
-    optimal: 7,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'h4',
-    moves: 0,
-    optimal: 7,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'g4',
-    moves: 0,
-    optimal: 5,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'f4',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'b4',
-    moves: 0,
-    optimal: 6,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'a4',
-    moves: 0,
-    optimal: 5,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'h3',
-    moves: 0,
-    optimal: 4,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'g3',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'e3',
-    moves: 0,
-    optimal: 2,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'c3',
-    moves: 0,
-    optimal: 4,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'a3',
-    moves: 0,
-    optimal: 2,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'h2',
-    moves: 0,
-    optimal: 4,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'f2',
-    moves: 0,
-    optimal: 2,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'e2',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'c2',
-    moves: 0,
-    optimal: 4,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'b2',
-    moves: 0,
-    optimal: 5,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'g1',
-    moves: 0,
-    optimal: 4,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'f1',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'e1',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'c1',
-    moves: 0,
-    optimal: 6,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'b1',
-    moves: 0,
-    optimal: 3,
-    time: 0,
-    split: 0,
-  },
-  {
-    square: 'a1',
-    time: 0,
-    split: 0,
-    moves: 0,
-    optimal: 3,
-  }
-];
-
 
 function inQVision(square) {
   // Queen on d5;
@@ -297,28 +76,17 @@ function legalKnight(source, target) {
   return (dx === 1 && dy === 2) || (dx === 2 && dy === 1);
 }
 
-function getNextTarget(prev) {
-  let file = prev.charCodeAt(0);
-  let rank = prev[1];
+function startTimer() {
+  if (t_start !== null || finished) return;
+  t_start = performance.now();
+  stats[0].time = t_start;
+  timerInterval = setInterval(updateTimer, 1000);
+}
 
-  if (--file < 97) {
-    file = 104;
-    if (--rank < 1) {
-      // rank = 8;
-      let t_end = performance.now();
-      let ms = Math.trunc(t_end - t_start);
-      let duration = new Date(ms).toISOString().substr(11, 8);
-      document.getElementById('timerDisplay').classList.remove('is-hidden');
-      clearInterval(timerInterval);
-    }
-  }
-
-  let next = String.fromCharCode(file) + rank;
-
-  if (inQVision(next)) {
-    next = getNextTarget(next);
-  }
-  return next;
+function renderHighlights() {
+  clearHighlights();
+  showQV();
+  highlightSquare(nextTarget);
 }
 
 function clearHighlights() {
@@ -326,31 +94,27 @@ function clearHighlights() {
 }
 
 function highlightSquare(square) {
-  if (showTargets) {
+  if (showTargets && square) {
     $(`#board .square-${square}`).css('background', '#FF0000');
   }
 }
 
-let movesDisplay = document.getElementById('moveCount');
-let targetCountDisplay = document.getElementById('targetsHit');
-let t_start;
-let t_checkpoint;
-
-let config = {
+const config = {
   draggable: true,
   pieceTheme:
-    "https://lichess1.org/assets/_v88h3i/piece/alpha/{piece}.svg",
-  position: "7N/8/8/3q4/8/8/8/8 w - - 0 1",
+    'images/pieces/{piece}.svg',
+  position: initialPosition,
   onDragStart: (source, piece) => {
-    if (piece.includes("b")) {
+    if (finished || piece !== "wN") {
       return false;
     }
   },
   onDrop: (source, target) => {
     // snapback if attacked by queen (or capturing), or illegal
-    if (inQVision(target) || !legalKnight(source, target)) {
+    if (finished || !/^[a-h][1-8]$/.test(target) || inQVision(target) || !legalKnight(source, target)) {
       return "snapback";
     }
+    startTimer();
     movesDisplay.textContent = ++moveCount;
     if (stats[targetCount + 1]) {
       stats[targetCount + 1].moves++;
@@ -359,47 +123,45 @@ let config = {
       targetCountDisplay.textContent = ++targetCount;
       stats[targetCount].time = performance.now();
       stats[targetCount].split = ((stats[targetCount].time - stats[targetCount - 1].time) / 1000).toFixed(2);
-      updateStatsDisplay(stats);
-      nextTarget = getNextTarget(nextTarget);
-      clearHighlights();
-      showQV();
-      highlightSquare(nextTarget);
+      updateStatsDisplay();
+      nextTarget = targets[targetCount + 1]?.square ?? null;
+      if (nextTarget === null) {
+        finished = true;
+        updateTimer();
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerDisplay.classList.remove('is-hidden');
+      }
+      renderHighlights();
     }
   },
-  onDragMove: () => {
-    if (moveCount === 0 && !timerInterval) {
-      t_start = performance.now();
-      stats[0].time = t_start;
-      timerInterval = setInterval(updateTimer, 1000);
-    }
-  },
+  onDragMove: startTimer,
 };
-var board = Chessboard("board", config);
+const board = Chessboard("board", config);
 highlightSquare(nextTarget);
-updateStatsDisplay(stats);
+updateStatsDisplay();
 
 document.getElementById('reset').addEventListener('click', () => {
-  board.position('7N/8/8/3q4/8/8/8/8 w - - 0 1');
-  nextTarget = 'f8';
+  board.position(initialPosition, false);
+  nextTarget = targets[1].square;
+  finished = false;
   moveCount = 0;
   stats.forEach(o => { o.moves = 0; o.time = 0; o.split = 0; })
   movesDisplay.textContent = moveCount;
   targetCount = 0;
   targetCountDisplay.textContent = targetCount;
-  clearHighlights();
-  showQV();
-  highlightSquare(nextTarget);
-  t_start = performance.now();
+  renderHighlights();
+  t_start = null;
   clearInterval(timerInterval);
   timerInterval = null;
   updateTimer();
-  updateStatsDisplay(stats);
+  updateStatsDisplay();
 });
 
 function updateTimer() {
   let t_end = performance.now();
-  let ms = Math.trunc(t_end - t_start);
-  let duration = new Date(ms).toISOString().substr(11, 8);
+  let ms = t_start === null ? 0 : Math.trunc(t_end - t_start);
+  let duration = new Date(ms).toISOString().slice(11, 19);
   document.getElementById('timerDisplay').textContent = duration;
 }
 
@@ -410,20 +172,10 @@ showTimerButton.addEventListener('click', () => {
 
 const showTargetButton = document.getElementById('showTarget');
 showTargetButton.addEventListener('click', () => {
-  if (showTargets) {
-    // turn off
-    showTargets = false;
-    showTargetButton.textContent = 'Show Target';
-    clearHighlights();
-  } else {
-    // turn on
-    showTargets = true;
-    showTargetButton.textContent = 'Hide Target';
-    highlightSquare(nextTarget);
-  }
+  showTargets = !showTargets;
+  showTargetButton.textContent = showTargets ? 'Hide Target' : 'Show Target';
+  renderHighlights();
 });
-
-let qv = false;
 
 function showQV() {
   let color = qv ? '#202020' : '';
@@ -447,6 +199,5 @@ document.getElementById('statsButton').addEventListener('click', () => {
 
 $(window).resize(() => {
   board.resize();
-  highlightSquare(nextTarget);
-  showQV();
+  renderHighlights();
 });
