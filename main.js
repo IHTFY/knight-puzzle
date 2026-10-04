@@ -38,9 +38,17 @@ const targets = [
   { square: 'b1', optimal: 3 },
   { square: 'a1', optimal: 3 },
 ];
-const stats = targets.map(target => ({ ...target, moves: 0, time: 0, split: 0 }));
+const stats = targets.map((target) => ({
+  ...target,
+  moves: 0,
+  time: 0,
+  split: 0,
+}));
 let nextTarget = targets[1].square;
+let currentSquare = targets[0].square;
 let showTargets = true;
+let showTimer = true;
+let showMoves = true;
 let qv = false;
 let finished = false;
 let timerInterval = null;
@@ -53,22 +61,62 @@ const statsDisplay = document.getElementById('statsDisplay');
 const movesDisplay = document.getElementById('moveCount');
 const targetCountDisplay = document.getElementById('targetsHit');
 const timerDisplay = document.getElementById('timerDisplay');
+const statusDisplay = document.getElementById('gameStatus');
+
+function analyzeSplits(completed) {
+  const rates = completed
+    .filter((stat) => stat.moves > 0 && Number.isFinite(Number(stat.split)))
+    .map((stat) => Number(stat.split) / stat.moves)
+    .sort((a, b) => a - b);
+  const n = rates.length;
+  const median = n
+    ? n % 2
+      ? rates[(n - 1) / 2]
+      : (rates[n / 2 - 1] + rates[n / 2]) / 2
+    : null;
+  return {
+    median,
+    threshold: n >= 5 ? Math.max(median * 1.75, median + 0.75) : null,
+  };
+}
 
 function updateStatsDisplay() {
-  statsDisplay.innerHTML = stats.map(stat => `<tr>
-    <th>${stat.square}</th><td>${stat.optimal}</td>
-    <td>${stat.moves}</td><td>${stat.split}</td>
-  </tr>`).join('');
+  const { median, threshold } = analyzeSplits(stats.slice(1, targetCount + 1));
+  document.getElementById('statsNote').textContent =
+    threshold === null
+      ? 'Time comparison after 5 targets.'
+      : 'Slow splits account for moves taken.';
+  statsDisplay.innerHTML = stats
+    .slice(1)
+    .map((stat, i) => {
+      const completed = i < targetCount;
+      const extra = completed ? stat.moves - stat.optimal : 0;
+      const rate = completed ? Number(stat.split) / stat.moves : 0;
+      const slow = completed && threshold !== null && rate > threshold;
+      const moveTitle =
+        extra > 0
+          ? `${extra} extra move${extra === 1 ? '' : 's'} above the best route`
+          : completed
+            ? 'Matches the best route'
+            : '';
+      const timeTitle = slow
+        ? `${rate.toFixed(2)} seconds per move; run median ${median.toFixed(2)} seconds per move`
+        : '';
+      return `<tr>
+      <th scope="row">${stat.square}</th><td>${stat.optimal}</td>
+      <td class="${extra > 0 ? 'extra-moves' : ''}" title="${moveTitle}">${completed ? stat.moves : '—'}${extra > 0 ? `<span class="extra-badge" aria-label="${moveTitle}">+${extra}</span>` : ''}</td>
+      <td class="${slow ? 'slow-split' : ''}" title="${timeTitle}">${completed ? `${Number(stat.split).toFixed(2)}s` : '—'}${slow ? `<span class="slow-dot" role="img" aria-label="Slow split: ${timeTitle}"></span>` : ''}</td>
+    </tr>`;
+    })
+    .join('');
 }
 
 function inQVision(square) {
-  // Queen on d5;
-  if (square[0] === "d" || square[1] === "5") {
-    return true;
-  }
-  const dx = Math.abs(square.charCodeAt(0) - 100); // 'd'.charCodeAt(0)
-  const dy = Math.abs(square[1] - 5);
-  return dx === dy;
+  return (
+    square[0] === 'd' ||
+    square[1] === '5' ||
+    Math.abs(square.charCodeAt(0) - 100) === Math.abs(Number(square[1]) - 5)
+  );
 }
 
 function legalKnight(source, target) {
@@ -85,122 +133,229 @@ function startTimer() {
 }
 
 function renderHighlights() {
-  clearHighlights();
-  showQV();
-  highlightSquare(nextTarget);
-}
-
-function clearHighlights() {
-  $('#board .square-55d63').css('background', '');
-}
-
-function highlightSquare(square) {
-  if (showTargets && square) {
-    $(`#board .square-${square}`).css('background', '#FF0000');
+  $('#board .square-55d63').removeClass(
+    'queen-attacked knight-available next-target',
+  );
+  for (const file of 'abcdefgh') {
+    for (let rank = 1; rank <= 8; rank++) {
+      const square = file + rank;
+      const cell = $(`#board .square-${square}`);
+      const attacked = inQVision(square);
+      if (qv && attacked) cell.addClass('queen-attacked');
+      if (
+        showMoves &&
+        !finished &&
+        !attacked &&
+        legalKnight(currentSquare, square)
+      ) {
+        cell.addClass('knight-available');
+      }
+      if (showTargets && square === nextTarget) cell.addClass('next-target');
+      cell.attr({
+        role: 'button',
+        tabindex: square === currentSquare ? 0 : -1,
+        'aria-label':
+          square +
+          (square === currentSquare
+            ? ', knight'
+            : square === 'd5'
+              ? ', queen'
+              : '') +
+          (showTargets && square === nextTarget ? ', next target' : '') +
+          (qv && attacked ? ', attacked by queen' : ''),
+      });
+    }
   }
+  document.getElementById('nextTargetDisplay').textContent = showTargets
+    ? nextTarget || '✓'
+    : '••';
+  document
+    .getElementById('showTarget')
+    .setAttribute('aria-pressed', String(showTargets));
+  document
+    .getElementById('nextTargetButton')
+    .setAttribute('aria-pressed', String(showTargets));
+  document.getElementById('progress').style.width =
+    `${(targetCount / (targets.length - 1)) * 100}%`;
+}
+
+function announceTarget() {
+  statusDisplay.textContent = finished
+    ? 'All targets reached. Open Stats to review your run.'
+    : showTargets
+      ? `Reach ${nextTarget} next.`
+      : 'Target hidden.';
 }
 
 const config = {
   draggable: true,
-  pieceTheme:
-    'images/pieces/{piece}.svg',
+  pieceTheme: 'images/pieces/{piece}.svg',
   position: initialPosition,
   onDragStart: (source, piece) => {
-    if (finished || piece !== "wN") {
-      return false;
-    }
+    if (finished || piece !== 'wN') return false;
   },
   onDrop: (source, target) => {
-    // snapback if attacked by queen (or capturing), or illegal
-    if (finished || !/^[a-h][1-8]$/.test(target) || inQVision(target) || !legalKnight(source, target)) {
-      return "snapback";
-    }
+    if (
+      finished ||
+      source !== currentSquare ||
+      !/^[a-h][1-8]$/.test(target) ||
+      inQVision(target) ||
+      !legalKnight(source, target)
+    )
+      return 'snapback';
     startTimer();
+    currentSquare = target;
     movesDisplay.textContent = ++moveCount;
-    if (stats[targetCount + 1]) {
-      stats[targetCount + 1].moves++;
-    }
+    stats[targetCount + 1].moves++;
     if (target === nextTarget) {
       targetCountDisplay.textContent = ++targetCount;
       stats[targetCount].time = performance.now();
-      stats[targetCount].split = ((stats[targetCount].time - stats[targetCount - 1].time) / 1000).toFixed(2);
-      updateStatsDisplay();
+      stats[targetCount].split = (
+        (stats[targetCount].time - stats[targetCount - 1].time) /
+        1000
+      ).toFixed(2);
       nextTarget = targets[targetCount + 1]?.square ?? null;
       if (nextTarget === null) {
         finished = true;
-        updateTimer();
         clearInterval(timerInterval);
         timerInterval = null;
-        timerDisplay.classList.remove('is-hidden');
       }
-      renderHighlights();
+      updateStatsDisplay();
     }
+    renderHighlights();
+    updateTimer();
+    announceTarget();
   },
   onDragMove: startTimer,
+  onSnapEnd: renderHighlights,
 };
-const board = Chessboard("board", config);
-highlightSquare(nextTarget);
+const board = Chessboard('board', config);
+renderHighlights();
 updateStatsDisplay();
+
+// Clicking a destination supplements dragging; both use the same validation.
+const boardElement = document.getElementById('board');
+function moveTo(square) {
+  const source = currentSquare;
+  if (config.onDrop(source, square) === 'snapback') return;
+  board.move(`${source}-${square}`, false);
+  renderHighlights();
+}
+boardElement.addEventListener('click', (event) => {
+  const square = event.target.closest('[data-square]')?.dataset.square;
+  if (square && square !== currentSquare) moveTo(square);
+});
+boardElement.addEventListener('keydown', (event) => {
+  const cell = event.target.closest('[data-square]');
+  if (!cell) return;
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    moveTo(cell.dataset.square);
+    boardElement.querySelector(`[data-square="${currentSquare}"]`)?.focus();
+    return;
+  }
+  const offset = {
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0],
+    ArrowUp: [0, 1],
+    ArrowDown: [0, -1],
+  }[event.key];
+  if (!offset) return;
+  event.preventDefault();
+  const file = cell.dataset.square.charCodeAt(0) + offset[0];
+  const rank = Number(cell.dataset.square[1]) + offset[1];
+  if (file >= 97 && file <= 104 && rank >= 1 && rank <= 8) {
+    boardElement
+      .querySelector(`[data-square="${String.fromCharCode(file)}${rank}"]`)
+      ?.focus();
+  }
+});
 
 document.getElementById('reset').addEventListener('click', () => {
   board.position(initialPosition, false);
+  currentSquare = targets[0].square;
   nextTarget = targets[1].square;
   finished = false;
-  moveCount = 0;
-  stats.forEach(o => { o.moves = 0; o.time = 0; o.split = 0; })
-  movesDisplay.textContent = moveCount;
-  targetCount = 0;
-  targetCountDisplay.textContent = targetCount;
-  renderHighlights();
+  moveCount = targetCount = 0;
+  stats.forEach((stat) => {
+    stat.moves = stat.time = stat.split = 0;
+  });
+  movesDisplay.textContent = targetCountDisplay.textContent = 0;
   t_start = null;
   clearInterval(timerInterval);
   timerInterval = null;
+  renderHighlights();
   updateTimer();
   updateStatsDisplay();
+  announceTarget();
   applyPendingUpdate();
 });
 
 function updateTimer() {
-  let t_end = performance.now();
-  let ms = t_start === null ? 0 : Math.trunc(t_end - t_start);
-  let duration = new Date(ms).toISOString().slice(11, 19);
-  document.getElementById('timerDisplay').textContent = duration;
+  const elapsed =
+    t_start === null
+      ? 0
+      : (finished ? stats.at(-1).time : performance.now()) - t_start;
+  const seconds = Math.floor(elapsed / 1000);
+  const duration = [
+    Math.floor(seconds / 3600),
+    Math.floor(seconds / 60) % 60,
+    seconds % 60,
+  ]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':');
+  timerDisplay.textContent = showTimer ? duration : '--:--:--';
 }
 
-const showTimerButton = document.getElementById('showTimer');
-showTimerButton.addEventListener('click', () => {
-  document.getElementById('timerDisplay').classList.toggle('is-hidden');
+document.getElementById('showTimer').addEventListener('click', () => {
+  showTimer = !showTimer;
+  document
+    .getElementById('showTimer')
+    .setAttribute('aria-pressed', String(showTimer));
+  updateTimer();
 });
 
-const showTargetButton = document.getElementById('showTarget');
-showTargetButton.addEventListener('click', () => {
+function toggleTargets() {
   showTargets = !showTargets;
-  showTargetButton.textContent = showTargets ? 'Hide Target' : 'Show Target';
+  renderHighlights();
+  announceTarget();
+}
+document.getElementById('showTarget').addEventListener('click', toggleTargets);
+document
+  .getElementById('nextTargetButton')
+  .addEventListener('click', toggleTargets);
+document.getElementById('queenVision').addEventListener('click', () => {
+  qv = !qv;
+  document
+    .getElementById('queenVision')
+    .setAttribute('aria-pressed', String(qv));
+  renderHighlights();
+});
+document.getElementById('knightVision').addEventListener('click', () => {
+  showMoves = !showMoves;
+  document
+    .getElementById('knightVision')
+    .setAttribute('aria-pressed', String(showMoves));
   renderHighlights();
 });
 
-function showQV() {
-  let color = qv ? '#202020' : '';
-  for (let j of 'abcdefgh') {
-    for (let i = 1; i <= 8; i++) {
-      if (inQVision(j + i)) {
-        $(`#board .square-${j + i}`).css('background-color', color);
-      }
-    }
-  }
-}
-
-document.getElementById('queenVision').addEventListener('click', () => {
-  qv = !qv;
-  showQV();
-});
-
 document.getElementById('statsButton').addEventListener('click', () => {
-  statsPanel.classList.toggle('is-hidden');
+  updateStatsDisplay();
+  statsPanel.showModal();
 });
-
-statsPanel.addEventListener('click', event => {
-  if (event.target === statsPanel) statsPanel.classList.add('is-hidden');
+document
+  .getElementById('closeStats')
+  .addEventListener('click', () => statsPanel.close());
+statsPanel.addEventListener('click', (event) => {
+  if (event.target !== statsPanel) return;
+  const bounds = statsPanel.getBoundingClientRect();
+  if (
+    event.clientX < bounds.left ||
+    event.clientX > bounds.right ||
+    event.clientY < bounds.top ||
+    event.clientY > bounds.bottom
+  )
+    statsPanel.close();
 });
 
 function resizeBoard() {
@@ -208,9 +363,10 @@ function resizeBoard() {
   renderHighlights();
 }
 $(window).resize(resizeBoard);
-// The board sizes itself to its container, which can change without a window resize.
 if (typeof ResizeObserver !== 'undefined') {
-  new ResizeObserver(resizeBoard).observe(document.getElementById('boardContainer'));
+  new ResizeObserver(resizeBoard).observe(
+    document.getElementById('boardContainer'),
+  );
 }
 
 // Offline support. A new app version is applied only between games so a reload never loses a run.
@@ -231,18 +387,22 @@ if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
     controllerChanged = true;
     applyPendingUpdate();
   });
-  navigator.serviceWorker.register('./service-worker.js').then(registration => {
-    swRegistration = registration;
-    registration.addEventListener('updatefound', () => {
-      const worker = registration.installing;
-      worker?.addEventListener('statechange', () => {
-        if (worker.state === 'installed') applyPendingUpdate();
+  navigator.serviceWorker
+    .register('./service-worker.js')
+    .then((registration) => {
+      swRegistration = registration;
+      registration.addEventListener('updatefound', () => {
+        const worker = registration.installing;
+        worker?.addEventListener('statechange', () => {
+          if (worker.state === 'installed') applyPendingUpdate();
+        });
       });
-    });
-    applyPendingUpdate();
-    // Installed apps can stay open for days, so check for updates when brought back.
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') registration.update().catch(() => {});
-    });
-  }).catch(err => console.error('Service worker not registered.', err));
+      applyPendingUpdate();
+      // Installed apps can stay open for days, so check for updates when brought back.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible')
+          registration.update().catch(() => {});
+      });
+    })
+    .catch((err) => console.error('Service worker not registered.', err));
 }
