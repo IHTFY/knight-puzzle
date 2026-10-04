@@ -1,7 +1,7 @@
 'use strict';
 
 // Content hash of FILES_TO_CACHE; `npm run stamp` updates it and `npm test` fails if it is stale.
-const CACHE_VERSION = '56079b2310fc';
+const CACHE_VERSION = 'e28016494fa8';
 const CACHE_PREFIX = 'knight-puzzle-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const FILES_TO_CACHE = [
@@ -10,7 +10,6 @@ const FILES_TO_CACHE = [
   './jquery.min.js',
   './main.js',
   './styles.css',
-  './bulma@0.9.4.css',
   './manifest.json',
   './favicon.ico',
   './images/icon.svg',

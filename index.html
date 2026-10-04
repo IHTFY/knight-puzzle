@@ -37,42 +37,61 @@
           <img src="images/icon.svg" alt="" />
           <h1>Knight Puzzle</h1>
         </div>
-        <button
-          class="next"
-          id="nextTargetButton"
-          aria-label="Target visibility"
-          aria-pressed="true"
-          title="Show or hide the target"
-        >
-          <span>Next</span><strong id="nextTargetDisplay">f8</strong
-          ><svg
-            class="eye"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
+        <div class="header-tools">
+          <button
+            class="next"
+            id="nextTargetButton"
+            aria-label="Target visibility"
+            aria-pressed="true"
+            title="Show or hide the target"
           >
-            <path
-              d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
-            />
-            <circle cx="12" cy="12" r="2.6" />
-            <path class="eye-slash" d="m4 3 16 18" />
-          </svg>
-        </button>
+            <span>Next</span><strong id="nextTargetDisplay">f8</strong
+            ><svg
+              class="eye"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
+              />
+              <circle cx="12" cy="12" r="2.6" />
+              <path class="eye-slash" d="m4 3 16 18" />
+            </svg></button
+          ><button
+            class="info-button"
+            id="howToButton"
+            aria-label="How to play"
+            title="How to play"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v6" />
+              <circle cx="12" cy="7.5" r=".6" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
       </header>
       <main class="layout">
         <section class="stage" aria-label="Game board">
           <div class="board-wrap">
-            <svg
-              id="routeOverlay"
-              class="route-overlay"
-              viewBox="0 0 800 800"
-              aria-hidden="true"
-            ></svg>
             <div id="boardContainer">
+              <svg
+                id="routeOverlay"
+                class="route-overlay"
+                viewBox="0 0 800 800"
+                aria-hidden="true"
+              ></svg>
               <div id="board" aria-label="Chessboard"></div>
             </div>
           </div>
@@ -272,25 +291,774 @@
         </button>
       </div>
       <div class="stats-legend">
-        <span><i class="legend-mark route-mark"></i>Extra moves</span
-        ><span><i class="legend-mark time-mark"></i>Slow split</span>
+        <button data-stat-tip="extra">
+          <i class="legend-mark route-mark"></i>Extra moves</button
+        ><button data-stat-tip="slow">
+          <i class="legend-mark time-mark"></i>Slow split
+        </button>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Square</th>
-              <th>Best</th>
-              <th>Moves</th>
-              <th>Split</th>
-              <th title="Rewinds used" aria-label="Rewinds used">↶</th>
+              <th>
+                <button
+                  class="stat-info"
+                  data-stat-tip="square"
+                  aria-label="About square"
+                >
+                  Square<i class="tiny-info" aria-hidden="true">i</i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="stat-info"
+                  data-stat-tip="best"
+                  aria-label="About best"
+                >
+                  Best<i class="tiny-info" aria-hidden="true">i</i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="stat-info"
+                  data-stat-tip="moves"
+                  aria-label="About moves"
+                >
+                  Moves<i class="tiny-info" aria-hidden="true">i</i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="stat-info"
+                  data-stat-tip="split"
+                  aria-label="About split time"
+                >
+                  Split<i class="tiny-info" aria-hidden="true">i</i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="stat-info"
+                  data-stat-tip="rewinds"
+                  aria-label="About rewinds"
+                >
+                  ↶<i class="tiny-info" aria-hidden="true">i</i>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody id="statsDisplay"></tbody>
         </table>
       </div>
-      <p class="stats-note" id="statsNote"></p>
-      <p class="stats-note" id="rewindNote"></p>
+      <div
+        id="statTip"
+        class="stat-popover"
+        popover="manual"
+        role="dialog"
+        aria-labelledby="statTipTitle"
+      >
+        <div class="tip-head">
+          <strong id="statTipTitle"></strong
+          ><button id="closeStatTip" aria-label="Close explanation">✕</button>
+        </div>
+        <p id="statTipText"></p>
+      </div>
+    </dialog>
+
+    <dialog class="dialog how-to" id="howTo" aria-labelledby="howToTitle">
+      <div class="dialog-head">
+        <h2 id="howToTitle">How to play</h2>
+        <button class="close" id="closeHowTo" aria-label="Close instructions">
+          ✕
+        </button>
+      </div>
+      <div
+        class="help-carousel"
+        id="helpCarousel"
+        aria-label="How to play"
+        aria-roledescription="carousel"
+        tabindex="0"
+      >
+        <section
+          class="help-slide"
+          role="group"
+          id="helpSlide0"
+          aria-label="1 of 3: Move"
+          aria-roledescription="slide"
+        >
+          <svg
+            class="help-illustration"
+            viewBox="0 0 160 160"
+            width="160"
+            height="160"
+            role="img"
+            aria-label="Knight jumps two squares down and one left"
+          >
+            <rect
+              class="help-square"
+              x="0"
+              y="0"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="0"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="0"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="0"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="40"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="40"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="40"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="40"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="80"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="80"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="80"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="80"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="120"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="120"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="120"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="120"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <path
+              d="M140 20V100H107"
+              fill="none"
+              stroke="#f1d39a"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-dasharray="5 7"
+            />
+            <path
+              d="m114 93-8 7 8 7"
+              fill="none"
+              stroke="#f1d39a"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <circle
+              cx="100"
+              cy="100"
+              r="14"
+              stroke="#f1d39a"
+              stroke-width="2"
+              fill="none"
+            />
+            <image data-help-piece="wN" x="120" y="0" width="40" height="40" />
+          </svg>
+          <p>Tap or drag. Jump two squares, then one.</p>
+        </section>
+        <section
+          class="help-slide"
+          role="group"
+          id="helpSlide1"
+          aria-label="2 of 3: Stay safe"
+          aria-roledescription="slide"
+        >
+          <svg
+            class="help-illustration queen-rays"
+            viewBox="0 0 200 200"
+            width="200"
+            height="200"
+            role="img"
+            aria-label="Queen attacks along eight straight rays: rows, columns, and diagonals. Blue squares between the rays are safe."
+          >
+            <defs>
+              <marker
+                id="queenRayTip"
+                viewBox="0 0 8 8"
+                refX="7"
+                refY="4"
+                markerWidth="5"
+                markerHeight="5"
+                orient="auto"
+              >
+                <path d="M0 0 8 4 0 8Z" fill="#f4b6bf" />
+              </marker>
+            </defs>
+            <rect
+              class="help-square"
+              x="0"
+              y="0"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="0"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="0"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="0"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="160"
+              y="0"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="40"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="40"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="40"
+              width="40"
+              height="40"
+              fill="#523e58"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="40"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="160"
+              y="40"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="80"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="80"
+              width="40"
+              height="40"
+              fill="#523e58"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="80"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="80"
+              width="40"
+              height="40"
+              fill="#523e58"
+            />
+            <rect
+              class="help-square"
+              x="160"
+              y="80"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="120"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="120"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="120"
+              width="40"
+              height="40"
+              fill="#523e58"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="120"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="160"
+              y="120"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="160"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="160"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="160"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="160"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="160"
+              y="160"
+              width="40"
+              height="40"
+              fill="#76566e"
+            />
+            <path
+              class="queen-ray"
+              d="M124 100 L188 100"
+              fill="none"
+              stroke="#f4b6bf"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              marker-end="url(#queenRayTip)"
+            />
+            <path
+              class="queen-ray"
+              d="M76 100 L12 100"
+              fill="none"
+              stroke="#f4b6bf"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              marker-end="url(#queenRayTip)"
+            />
+            <path
+              class="queen-ray"
+              d="M100 124 L100 188"
+              fill="none"
+              stroke="#f4b6bf"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              marker-end="url(#queenRayTip)"
+            />
+            <path
+              class="queen-ray"
+              d="M100 76 L100 12"
+              fill="none"
+              stroke="#f4b6bf"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              marker-end="url(#queenRayTip)"
+            />
+            <path
+              class="queen-ray"
+              d="M124 124 L188 188"
+              fill="none"
+              stroke="#f4b6bf"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              marker-end="url(#queenRayTip)"
+            />
+            <path
+              class="queen-ray"
+              d="M124 76 L188 12"
+              fill="none"
+              stroke="#f4b6bf"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              marker-end="url(#queenRayTip)"
+            />
+            <path
+              class="queen-ray"
+              d="M76 124 L12 188"
+              fill="none"
+              stroke="#f4b6bf"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              marker-end="url(#queenRayTip)"
+            />
+            <path
+              class="queen-ray"
+              d="M76 76 L12 12"
+              fill="none"
+              stroke="#f4b6bf"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              marker-end="url(#queenRayTip)"
+            />
+            <image data-help-piece="bQ" x="80" y="80" width="40" height="40" />
+            <circle cx="180" cy="60" r="12" fill="#102039" />
+            <path
+              d="m174 60 4 4 8-9"
+              fill="none"
+              stroke="#c1dcbd"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <p>The queen attacks along each ray. Land outside them.</p>
+        </section>
+        <section
+          class="help-slide"
+          role="group"
+          id="helpSlide2"
+          aria-label="3 of 3: Reach targets"
+          aria-roledescription="slide"
+        >
+          <svg
+            class="help-illustration"
+            viewBox="0 0 160 160"
+            width="160"
+            height="160"
+            role="img"
+            aria-label="Knight follows a curved route to the next target"
+          >
+            <rect
+              class="help-square"
+              x="0"
+              y="0"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="0"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="0"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="0"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="40"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="40"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="40"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="40"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="80"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="80"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="80"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="80"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="0"
+              y="120"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="40"
+              y="120"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <rect
+              class="help-square"
+              x="80"
+              y="120"
+              width="40"
+              height="40"
+              fill="#2b496e"
+            />
+            <rect
+              class="help-square"
+              x="120"
+              y="120"
+              width="40"
+              height="40"
+              fill="#8eaed2"
+            />
+            <path
+              d="M140 20C140 55 130 92 100 100"
+              fill="none"
+              stroke="#e5c78f"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+            <circle
+              cx="100"
+              cy="100"
+              r="14"
+              fill="#193253"
+              stroke="#85b5ff"
+              stroke-width="2"
+            />
+            <text
+              x="100"
+              y="105"
+              text-anchor="middle"
+              fill="#dfecff"
+              font-size="14"
+              font-family="system-ui"
+            >
+              1
+            </text>
+            <image data-help-piece="wN" x="120" y="0" width="40" height="40" />
+          </svg>
+          <p>Reach each Next square in the fewest moves.</p>
+        </section>
+      </div>
+      <div class="help-dots" role="group" aria-label="Instruction slides">
+        <button
+          class="help-dot"
+          data-help-dot="0"
+          aria-label="Move, slide 1 of 3"
+          aria-current="true"
+        ></button
+        ><button
+          class="help-dot"
+          data-help-dot="1"
+          aria-label="Stay safe, slide 2 of 3"
+          aria-current="false"
+        ></button
+        ><button
+          class="help-dot"
+          data-help-dot="2"
+          aria-label="Reach targets, slide 3 of 3"
+          aria-current="false"
+        ></button>
+      </div>
+      <span class="sr-only" id="helpAnnouncement" aria-live="polite"></span>
     </dialog>
 
     <dialog
