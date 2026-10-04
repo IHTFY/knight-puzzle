@@ -53,6 +53,13 @@ attacked squares and available moves independently. Click the timer card to hide
 or reveal elapsed time, or the targets card and next-square badge to toggle the
 target. Display settings survive Reset.
 
+Best route shows numbered, center-to-center arrows from the current square to the
+next target. Step 1 draws on top. Rewind returns to the last reached target and
+clears moves from the current leg while keeping the timer and completed stats.
+The Moves card and Stats track rewinds. Split time includes discarded attempts.
+Rewind is disabled for an empty leg or a completed run. Full Reset requires
+confirmation and clears all moves, targets, rewinds, route arrows, and the timer.
+
 Stats marks extra moves in amber and slow splits in lavender. Slow splits use
 seconds per actual move and compare with the median across completed targets.
 After five targets, a split is slow only if it exceeds both 1.75 times the median

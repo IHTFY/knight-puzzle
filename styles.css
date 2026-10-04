@@ -27,7 +27,7 @@ body {
     14px/1.4 system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
 }
 button {
@@ -418,10 +418,10 @@ tbody tr.done td:first-child {
 .eye-slash {
   display: none;
 }
-[aria-pressed="false"] .eye-slash {
+[aria-pressed='false'] .eye-slash {
   display: block;
 }
-[aria-pressed="true"] .eye {
+[aria-pressed='true'] .eye {
   color: var(--accent);
 }
 .interactive {
@@ -444,8 +444,8 @@ tbody tr.done td:first-child {
 .next:hover {
   border-color: #416294;
 }
-.interactive[aria-pressed="false"] .number#timerDisplay,
-.next[aria-pressed="false"] strong {
+.interactive[aria-pressed='false'] .number#timerDisplay,
+.next[aria-pressed='false'] strong {
   color: var(--muted);
 }
 .next strong {
@@ -459,7 +459,7 @@ tbody tr.done td:first-child {
   gap: 7px;
   font-weight: 500;
 }
-.vision[aria-pressed="true"] {
+.vision[aria-pressed='true'] {
   background: #193251;
   border-color: #3b6291;
   color: #b9d3fc;
@@ -535,10 +535,10 @@ tbody tr.done td:first-child {
   width: 23px;
   height: 23px;
 }
-.vision[aria-pressed="false"] {
+.vision[aria-pressed='false'] {
   color: var(--muted);
 }
-.vision[aria-pressed="true"] {
+.vision[aria-pressed='true'] {
   color: var(--accent);
 }
 .stats-legend {
@@ -662,7 +662,7 @@ td.slow-split {
   color: var(--muted);
 }
 .queen-attacked:before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
@@ -675,7 +675,7 @@ td.slow-split {
   pointer-events: none;
 }
 .knight-available:before {
-  content: "";
+  content: '';
   position: absolute;
   width: 17%;
   height: 17%;
@@ -691,7 +691,7 @@ td.slow-split {
   color: #12386b;
 }
 .next-target:after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 20%;
   border: 2px solid currentColor;
@@ -713,7 +713,7 @@ td.slow-split {
   justify-content: center;
   overflow: hidden;
 }
-.table-wrap th[scope="row"] {
+.table-wrap th[scope='row'] {
   position: static;
   background: transparent;
   color: var(--accent);
@@ -725,4 +725,150 @@ td.slow-split {
   .notation-322f9 {
     font-size: 9px;
   }
+}
+
+.board-wrap {
+  position: relative;
+}
+.route-overlay {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  overflow: visible;
+}
+.route-arrow {
+  stroke: #e5c78f;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+}
+.route-head {
+  fill: #e5c78f;
+  stroke: none;
+}
+.route-number {
+  fill: #102039;
+  font-family: system-ui, sans-serif;
+  font-size: 22px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-weight: 750;
+}
+.actions {
+  grid-template-columns: 93px minmax(0, 1fr);
+  gap: 8px;
+}
+.history-buttons {
+  display: grid;
+  grid-template-columns: 44px 44px;
+  gap: 5px;
+}
+.route-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  padding: 0 9px;
+}
+.route-button[aria-pressed='true'] {
+  color: #e0c598;
+  background: #302a252e;
+  border-color: #6f6250;
+}
+.route-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.route-button small {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.action:disabled {
+  opacity: 0.35;
+  cursor: default;
+  filter: none;
+}
+.rewind-count {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.rewind-count .piece-icon {
+  width: 13px;
+  height: 13px;
+}
+.stats-note {
+  margin-top: 10px;
+}
+.table-wrap {
+  max-height: calc(85dvh - 195px);
+}
+.dialog {
+  width: min(510px, calc(100% - 24px));
+}
+th,
+td {
+  padding: 9px 7px;
+}
+.undo-cell {
+  color: var(--muted);
+  font-size: 11px;
+}
+@media (max-width: 360px) and (orientation: portrait) {
+  .route-button {
+    gap: 5px;
+    font-size: 12px;
+  }
+  .route-button small {
+    font-size: 9px;
+  }
+  .route-icon {
+    width: 16px;
+    height: 16px;
+  }
+  .actions {
+    gap: 7px;
+  }
+  .metric-head .label {
+    font-size: 10px;
+  }
+}
+
+.reset-button {
+  background: #341e2b;
+  border-color: #754252;
+  color: #f3a7b2;
+}
+.reset-button:hover {
+  background: #472635;
+  border-color: #9c5368;
+}
+.reset-confirm {
+  width: min(370px, calc(100% - 28px));
+  padding: 24px;
+}
+.reset-confirm h2 {
+  font-size: 22px;
+  margin: 0 0 12px;
+}
+.reset-confirm p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0 0 22px;
+}
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.history-buttons #reset {
+  font-size: 11px;
+  padding: 0;
 }

@@ -66,6 +66,12 @@
       <main class="layout">
         <section class="stage" aria-label="Game board">
           <div class="board-wrap">
+            <svg
+              id="routeOverlay"
+              class="route-overlay"
+              viewBox="0 0 800 800"
+              aria-hidden="true"
+            ></svg>
             <div id="boardContainer">
               <div id="board" aria-label="Chessboard"></div>
             </div>
@@ -74,7 +80,24 @@
         <section class="panel" aria-label="Game controls">
           <div class="metrics">
             <div class="metric">
-              <div class="label">Moves</div>
+              <div class="metric-head">
+                <span class="label">Moves</span
+                ><span class="rewind-count" title="Rewinds used"
+                  ><span class="sr-only">Rewinds </span
+                  ><svg
+                    class="piece-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m9 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12" /></svg
+                  ><span id="undoCount">0</span></span
+                >
+              </div>
               <div class="number" id="moveCount">0</div>
             </div>
             <button
@@ -180,13 +203,64 @@
                 </svg>
               </button>
             </div>
-            <button class="action" id="reset">Reset</button
-            ><button class="action primary" id="statsButton">Stats</button>
+            <button
+              class="action route-button"
+              id="showRoute"
+              aria-label="Best route from current square"
+              aria-describedby="routeSummary"
+              aria-pressed="false"
+              title="Show the shortest safe route from the knight's current square"
+            >
+              <svg
+                class="route-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 19v-7h14V5m-4 4 4-4 4 4" />
+                <circle cx="5" cy="19" r="2" /></svg
+              ><span>Best route</span><small id="routeCount"></small>
+            </button>
+            <div class="history-buttons" role="group" aria-label="Run controls">
+              <button
+                class="action icon-button"
+                id="rewind"
+                aria-label="Rewind to last reached target"
+                title="Rewind to the last reached target; keep the timer"
+                disabled
+              >
+                <svg
+                  class="piece-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12" />
+                </svg></button
+              ><button
+                class="action icon-button reset-button"
+                id="reset"
+                aria-label="Reset entire run"
+                title="Reset the entire run"
+              >
+                Reset
+              </button>
+            </div>
+            <button class="action primary" id="statsButton">Stats</button>
           </div>
         </section>
       </main>
     </div>
-    <span class="sr-only" id="sessionState"></span>
+    <span class="sr-only" id="sessionState"></span
+    ><span class="sr-only" id="routeSummary"></span>
     <p class="sr-only" id="gameStatus" role="status">
       Click a marked square to move. Reach f8 next.
     </p>
@@ -209,12 +283,32 @@
               <th>Best</th>
               <th>Moves</th>
               <th>Split</th>
+              <th title="Rewinds used" aria-label="Rewinds used">↶</th>
             </tr>
           </thead>
           <tbody id="statsDisplay"></tbody>
         </table>
       </div>
       <p class="stats-note" id="statsNote"></p>
+      <p class="stats-note" id="rewindNote"></p>
+    </dialog>
+
+    <dialog
+      class="dialog reset-confirm"
+      id="resetConfirm"
+      aria-labelledby="resetTitle"
+      aria-describedby="resetDescription"
+    >
+      <h2 id="resetTitle">Reset this run?</h2>
+      <p id="resetDescription">
+        This clears all moves, targets, rewinds, and the timer.
+      </p>
+      <div class="confirm-actions">
+        <button class="action" id="cancelReset" autofocus>Keep playing</button
+        ><button class="action reset-button" id="confirmReset">
+          Reset run
+        </button>
+      </div>
     </dialog>
   </body>
 </html>
