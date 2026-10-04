@@ -60,6 +60,10 @@ The Moves card and Stats track rewinds. Split time includes discarded attempts.
 Rewind is disabled for an empty leg or a completed run. Full Reset requires
 confirmation and clears all moves, targets, rewinds, route arrows, and the timer.
 
+Route searches cache distances to each target. Following the shown route reuses
+its remaining moves; a detour chooses a shortest route from the new square.
+Unchanged route displays skip rebuilding their SVG elements.
+
 Stats marks extra moves in amber and slow splits in lavender. Slow splits use
 seconds per actual move and compare with the median across completed targets.
 After five targets, a split is slow only if it exceeds both 1.75 times the median
