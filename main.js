@@ -1,3 +1,5 @@
+'use strict';
+
 const initialPosition = '7N/8/8/3q4/8/8/8/8 w - - 0 1';
 // Target order and best move counts are shared by gameplay and the stats table.
 const targets = [
@@ -58,6 +60,91 @@ let targetCount = 0;
 let t_start = null;
 let undoCount = 0;
 let showRoute = false;
+const routeGraph = new Map();
+const routeTrees = new Map();
+let cachedRoute = [],
+  cachedDestination = null;
+function shortestRoute(source, target) {
+  if (!target || inQVision(source) || inQVision(target)) return [];
+  if (!routeGraph.size) {
+    for (const file of 'abcdefgh')
+      for (let rank = 1; rank <= 8; rank++) {
+        const square = file + rank;
+        if (inQVision(square)) continue;
+        const neighbors = [];
+        for (const [dx, dy] of [
+          [-2, -1],
+          [-2, 1],
+          [-1, -2],
+          [-1, 2],
+          [1, -2],
+          [1, 2],
+          [2, -1],
+          [2, 1],
+        ]) {
+          const f = file.charCodeAt(0) + dx,
+            r = rank + dy;
+          if (f < 97 || f > 104 || r < 1 || r > 8) continue;
+          const next = String.fromCharCode(f) + r;
+          if (!inQVision(next)) neighbors.push(next);
+        }
+        routeGraph.set(square, neighbors);
+      }
+  }
+  if (!routeGraph.has(source) || !routeGraph.has(target)) return [];
+  let distances = routeTrees.get(target);
+  if (!distances) {
+    distances = new Map([[target, 0]]);
+    const queue = [target];
+    for (let head = 0; head < queue.length; head++) {
+      const square = queue[head];
+      for (const next of routeGraph.get(square))
+        if (!distances.has(next)) {
+          distances.set(next, distances.get(square) + 1);
+          queue.push(next);
+        }
+    }
+    routeTrees.set(target, distances);
+  }
+  if (!distances.has(source)) return [];
+  const path = [source];
+  while (path.at(-1) !== target) {
+    const square = path.at(-1);
+    path.push(
+      routeGraph
+        .get(square)
+        .find((next) => distances.get(next) === distances.get(square) - 1),
+    );
+  }
+  return path;
+}
+function routeForPosition(source, target) {
+  if (target === cachedDestination && cachedRoute[0] === source)
+    return cachedRoute;
+  if (target === cachedDestination && cachedRoute[1] === source)
+    cachedRoute = cachedRoute.slice(1);
+  else cachedRoute = shortestRoute(source, target);
+  cachedDestination = target;
+  return cachedRoute;
+}
+
+const flowOptions = {
+  style: 'amber',
+  speed: 160,
+  curve: 0.7,
+  width: 10,
+  numbers: true,
+  animate: true,
+};
+let flowFrame = 0;
+let flowPhase = 0;
+let flowLastTime = 0;
+let flowGeometry = null,
+  flowScene = null,
+  flowDrawingKey = null;
+const flowPalettes = {};
+
+const reducedFlow = matchMedia('(prefers-reduced-motion: reduce)');
 
 const statsPanel = document.getElementById('statsPanel');
 const statsDisplay = document.getElementById('statsDisplay');
@@ -85,12 +172,6 @@ function analyzeSplits(completed) {
 
 function updateStatsDisplay() {
   const { median, threshold } = analyzeSplits(stats.slice(1, targetCount + 1));
-  document.getElementById('rewindNote').textContent =
-    `${undoCount} rewind${undoCount === 1 ? '' : 's'}; split time includes retries.`;
-  document.getElementById('statsNote').textContent =
-    threshold === null
-      ? 'Time comparison after 5 targets.'
-      : 'Slow splits account for moves taken.';
   statsDisplay.innerHTML = stats
     .slice(1)
     .map((stat, i) => {
@@ -109,8 +190,8 @@ function updateStatsDisplay() {
         : '';
       return `<tr>
       <th scope="row">${stat.square}</th><td>${stat.optimal}</td>
-      <td class="${extra > 0 ? 'extra-moves' : ''}" title="${moveTitle}">${completed ? stat.moves : '—'}${extra > 0 ? `<span class="extra-badge" aria-label="${moveTitle}">+${extra}</span>` : ''}</td>
-      <td class="${slow ? 'slow-split' : ''}" title="${timeTitle}">${completed ? `${Number(stat.split).toFixed(2)}s` : '—'}${slow ? `<span class="slow-dot" role="img" aria-label="Slow split: ${timeTitle}"></span>` : ''}</td>
+      <td class="${extra > 0 ? 'extra-moves' : ''}" >${completed ? stat.moves : '—'}${extra > 0 ? `<button class="stat-modifier extra-badge" aria-haspopup="dialog" aria-controls="statTip" aria-expanded="false" data-stat-tip="extra" data-stat-note="${moveTitle}" aria-label="${moveTitle}. Show explanation">+${extra}</button>` : ''}</td>
+      <td class="${slow ? 'slow-split' : ''}" >${completed ? `${Number(stat.split).toFixed(2)}s` : '—'}${slow ? `<button class="stat-modifier slow-dot" aria-haspopup="dialog" aria-controls="statTip" aria-expanded="false" data-stat-tip="slow" data-stat-note="${timeTitle}" aria-label="Slow split. Show explanation"></button>` : ''}</td>
       <td class="undo-cell">${completed ? stat.rewinds : '—'}</td>
     </tr>`;
     })
@@ -398,50 +479,177 @@ if (typeof ResizeObserver !== 'undefined') {
   );
 }
 
-function shortestRoute(source, target) {
-  if (!target) return [];
-  const queue = [[source]],
-    seen = new Set([source]);
-  for (const path of queue) {
-    const square = path.at(-1);
-    if (square === target) return path;
-    for (const [dx, dy] of [
-      [-2, -1],
-      [-2, 1],
-      [-1, -2],
-      [-1, 2],
-      [1, -2],
-      [1, 2],
-      [2, -1],
-      [2, 1],
-    ]) {
-      const file = square.charCodeAt(0) + dx,
-        rank = Number(square[1]) + dy;
-      if (file < 97 || file > 104 || rank < 1 || rank > 8) continue;
-      const next = String.fromCharCode(file) + rank;
-      if (!inQVision(next) && !seen.has(next)) {
-        seen.add(next);
-        queue.push([...path, next]);
+function flowCurves(points) {
+  const k = flowOptions.curve / 6;
+  const tangents = points.map((p, i) => {
+    const before = points[Math.max(0, i - 1)],
+      after = points[Math.min(points.length - 1, i + 1)];
+    const x = (after.x - before.x) * k,
+      y = (after.y - before.y) * k;
+    const scale = Math.min(
+      1,
+      x ? Math.min(p.x - 30, 770 - p.x) / Math.abs(x) : 1,
+      y ? Math.min(p.y - 30, 770 - p.y) / Math.abs(y) : 1,
+    );
+    return { x: x * scale, y: y * scale };
+  });
+  return points.slice(1).map((b, i) => {
+    const a = points[i],
+      ta = tangents[i],
+      tb = tangents[i + 1];
+    return [
+      a,
+      { x: a.x + ta.x, y: a.y + ta.y },
+      { x: b.x - tb.x, y: b.y - tb.y },
+      b,
+    ];
+  });
+}
+function curveCommand(c) {
+  return `C ${c[1].x} ${c[1].y} ${c[2].x} ${c[2].y} ${c[3].x} ${c[3].y}`;
+}
+function flowPath(points) {
+  return (
+    `M ${points[0].x} ${points[0].y} ` +
+    flowCurves(points).map(curveCommand).join(' ')
+  );
+}
+function cubicPoint(c, t) {
+  const u = 1 - t,
+    a = u * u * u,
+    b = 3 * u * u * t,
+    d = 3 * u * t * t,
+    e = t * t * t;
+  return {
+    x: a * c[0].x + b * c[1].x + d * c[2].x + e * c[3].x,
+    y: a * c[0].y + b * c[1].y + d * c[2].y + e * c[3].y,
+  };
+}
+function buildFlowGeometry(route) {
+  const points = route.map((square) => ({
+    x: (square.charCodeAt(0) - 97) * 100 + 50,
+    y: (8 - Number(square[1])) * 100 + 50,
+  }));
+  let distance = 0;
+  const steps = flowCurves(points).map((c) => {
+    const samples = [{ t: 0, length: 0 }],
+      start = distance;
+    let length = 0,
+      previous = c[0];
+    for (let i = 1; i <= 48; i++) {
+      const t = i / 48,
+        p = cubicPoint(c, t);
+      length += Math.hypot(p.x - previous.x, p.y - previous.y);
+      samples.push({ t, length });
+      previous = p;
+    }
+    function atLength(value) {
+      let lo = 0,
+        hi = samples.length - 1;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (samples[mid].length < value) lo = mid;
+        else hi = mid;
       }
+      const a = samples[lo],
+        b = samples[hi],
+        mix = (value - a.length) / (b.length - a.length || 1);
+      return cubicPoint(c, a.t + (b.t - a.t) * mix);
+    }
+    const segments = [],
+      count = Math.ceil(length / 12);
+    for (let i = 0; i < count; i++) {
+      const from = (length * i) / count,
+        to = (length * (i + 1)) / count;
+      const a = atLength(from),
+        m = atLength((from + to) / 2),
+        b = atLength(to);
+      segments.push({
+        d: `M ${a.x} ${a.y} Q ${2 * m.x - (a.x + b.x) / 2} ${2 * m.y - (a.y + b.y) / 2} ${b.x} ${b.y}`,
+        distance: start + (from + to) / 2,
+      });
+    }
+    distance += length;
+    return { command: curveCommand(c), segments };
+  });
+  return { route: [...route], curve: flowOptions.curve, points, steps };
+}
+function flowPalette(style) {
+  if (flowPalettes[style]) return flowPalettes[style];
+  const size = style === 'rainbow' ? 600 : 360,
+    colors = [];
+  for (let i = 0; i < size; i++) {
+    const wave = i / 2,
+      pulse = Math.exp(-Math.pow((wave - 110) / 24, 2));
+    colors.push(
+      style === 'rainbow'
+        ? `hsl(${wave * 1.2} 85% 73%)`
+        : style === 'white'
+          ? `rgb(${Math.round(124 + 131 * pulse)},${Math.round(167 + 88 * pulse)},${Math.round(222 + 33 * pulse)})`
+          : style === 'still'
+            ? '#e5c78f'
+            : `rgb(${Math.round(197 + 58 * pulse)},${Math.round(146 + 105 * pulse)},${Math.round(63 + 172 * pulse)})`,
+    );
+  }
+  return (flowPalettes[style] = colors);
+}
+function paintFlow(time) {
+  flowFrame = 0;
+  if (!flowScene) return;
+  const animate =
+    flowOptions.animate &&
+    flowOptions.style !== 'still' &&
+    !reducedFlow.matches &&
+    !document.hidden;
+  if (animate && flowLastTime)
+    flowPhase += (Math.min(time - flowLastTime, 64) / 1000) * flowOptions.speed;
+  flowLastTime = animate ? time : 0;
+  const colors = flowPalette(flowOptions.style),
+    period = colors.length;
+  for (const segment of flowScene.segments) {
+    const index =
+        ((Math.floor((segment.distance - flowPhase) * 2) % period) + period) %
+        period,
+      color = colors[index];
+    if (segment.color !== color) {
+      segment.element.setAttribute('stroke', color);
+      segment.color = color;
     }
   }
-  return [];
+  if (animate) flowFrame = requestAnimationFrame(paintFlow);
+}
+function refreshFlowAnimation() {
+  cancelAnimationFrame(flowFrame);
+  flowFrame = 0;
+  paintFlow(performance.now());
 }
 function renderRoute() {
-  const overlay = document.getElementById('routeOverlay');
-  const realBoard = document.querySelector('.board-b72b1');
+  const overlay = document.getElementById('routeOverlay'),
+    realBoard = document.querySelector('.board-b72b1');
   if (!realBoard) return;
   const rect = realBoard.getBoundingClientRect(),
-    wrap = document.querySelector('.board-wrap'),
+    wrap = document.getElementById('boardContainer'),
     bounds = wrap.getBoundingClientRect();
-  Object.assign(overlay.style, {
-    left: `${rect.left - bounds.left - wrap.clientLeft}px`,
-    top: `${rect.top - bounds.top - wrap.clientTop}px`,
-    width: `${rect.width}px`,
-    height: `${rect.height}px`,
-  });
-  overlay.innerHTML = '';
-  const route = showRoute ? shortestRoute(currentSquare, nextTarget) : [];
+  const layout = [
+    rect.left - bounds.left - wrap.clientLeft,
+    rect.top - bounds.top - wrap.clientTop,
+    rect.width,
+    rect.height,
+  ];
+  if (overlay.dataset.layout !== layout.join(',')) {
+    overlay.dataset.layout = layout.join(',');
+    Object.assign(overlay.style, {
+      left: layout[0] + 'px',
+      top: layout[1] + 'px',
+      width: layout[2] + 'px',
+      height: layout[3] + 'px',
+    });
+  }
+  const destination = nextTarget;
+  const route = showRoute ? routeForPosition(currentSquare, destination) : [];
+  const drawingKey = `${showRoute}:${route.join(',')}:${flowOptions.curve}:${flowOptions.width}:${flowOptions.numbers}`;
+  if (drawingKey === flowDrawingKey) return;
+  flowDrawingKey = drawingKey;
   const steps = Math.max(0, route.length - 1);
   document.getElementById('routeCount').textContent = showRoute
     ? `${steps} move${steps === 1 ? '' : 's'}`
@@ -449,29 +657,70 @@ function renderRoute() {
   document.getElementById('routeSummary').textContent = showRoute
     ? `Best route from ${currentSquare}: ${route.join(', ')}.`
     : '';
-  if (route.length < 2) return;
-  const point = (square) => ({
-    x: (square.charCodeAt(0) - 97) * 100 + 50,
-    y: (8 - Number(square[1])) * 100 + 50,
-  });
-  for (let i = route.length - 1; i >= 1; i--) {
-    const a = point(route[i - 1]),
-      b = point(route[i]),
-      dx = b.x - a.x,
-      dy = b.y - a.y,
-      length = Math.hypot(dx, dy);
-    const ux = dx / length,
-      uy = dy / length,
-      px = -uy,
-      py = ux;
-    const tip = b;
-    const base = { x: tip.x - ux * 52, y: tip.y - uy * 52 };
-    const head = `M ${tip.x} ${tip.y} L ${base.x + px * 26} ${base.y + py * 26} L ${base.x - px * 26} ${base.y - py * 26} Z`;
-    const shaft = `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
-    const number = { x: tip.x - ux * (104 / 3), y: tip.y - uy * (104 / 3) };
-    overlay.innerHTML += `<g data-route-step="${i}"><path class="route-arrow" d="${shaft}"/><path class="route-head" data-step="${i}" d="${head}"/><text class="route-number" x="${number.x}" y="${number.y}">${i}</text></g>`;
+  cancelAnimationFrame(flowFrame);
+  flowFrame = 0;
+  if (route.length < 2) {
+    overlay.innerHTML = '';
+    flowScene = null;
+    flowLastTime = 0;
+    return;
   }
+  let offset = flowGeometry?.route.indexOf(route[0]) ?? -1;
+  if (
+    !flowGeometry ||
+    flowGeometry.curve !== flowOptions.curve ||
+    offset < 0 ||
+    flowGeometry.route.slice(offset).join(',') !== route.join(',')
+  ) {
+    flowGeometry = buildFlowGeometry(route);
+    offset = 0;
+  }
+  // Following a route keeps its remaining curves and their original arc lengths.
+  const geometry = flowGeometry,
+    points = geometry.points.slice(offset),
+    remaining = geometry.steps.slice(offset);
+  const d =
+    `M ${points[0].x} ${points[0].y} ` +
+    remaining.map((step) => step.command).join(' ');
+  const segments = remaining
+    .flatMap((step) => step.segments)
+    .slice()
+    .reverse();
+  const paths = segments
+    .map(
+      (segment, i) =>
+        `<path data-flow-segment="${segments.length - 1 - i}" d="${segment.d}"/>`,
+    )
+    .join('');
+  const labels = flowOptions.numbers
+    ? points
+        .slice(1)
+        .map(
+          (p, i) =>
+            `<g data-route-step="${i + 1}"><rect class="flow-step-bg" x="${p.x - 15}" y="${p.y - 14}" width="30" height="28" rx="9"/><text class="flow-step" x="${p.x}" y="${p.y}">${i + 1}</text></g>`,
+        )
+        .reverse()
+        .join('')
+    : '';
+  overlay.innerHTML = `<path id="flowTrack" d="${d}" fill="none" stroke="#d8bb7f" stroke-opacity=".55" stroke-width="${flowOptions.width}" stroke-linecap="round" stroke-linejoin="round"/><g id="flowSegments" fill="none" stroke-width="${flowOptions.width}" stroke-linecap="round" stroke-linejoin="round">${paths}</g><g id="flowLabels">${labels}</g>`;
+  const elements = overlay.querySelectorAll('#flowSegments path');
+  flowScene = {
+    segments: segments.map((segment, i) => ({
+      element: elements[i],
+      distance: segment.distance,
+      color: null,
+    })),
+  };
+  refreshFlowAnimation();
 }
+function updateMotion() {
+  refreshFlowAnimation();
+}
+reducedFlow.addEventListener('change', updateMotion);
+document.addEventListener('visibilitychange', () => {
+  flowLastTime = 0;
+  refreshFlowAnimation();
+});
 
 document.getElementById('showRoute').addEventListener('click', () => {
   showRoute = !showRoute;
@@ -497,6 +746,227 @@ document.getElementById('rewind').addEventListener('click', () => {
   updateStatsDisplay();
   statusDisplay.textContent = `Rewound to ${currentSquare}. Timer continues. ${undoCount} rewinds used.`;
 });
+const howTo = document.getElementById('howTo');
+const helpCarousel = document.getElementById('helpCarousel');
+let helpStep = 0,
+  helpScrollFrame = 0;
+function updateHelpDots(index) {
+  if (helpStep !== index)
+    document.getElementById('helpAnnouncement').textContent = [
+      'Move',
+      'Stay safe',
+      'Reach targets',
+    ][index];
+  helpStep = index;
+  document
+    .querySelectorAll('[data-help-dot]')
+    .forEach((b, i) => b.setAttribute('aria-current', i === index));
+}
+function showHelpStep(index, instant = false) {
+  index = Math.max(0, Math.min(2, index));
+  helpCarousel.scrollTo({
+    left: helpCarousel.clientWidth * index,
+    behavior: instant || reducedFlow.matches ? 'instant' : 'smooth',
+  });
+  updateHelpDots(index);
+}
+document.getElementById('howToButton').onclick = () => {
+  howTo.showModal();
+  showHelpStep(0, true);
+};
+document.getElementById('closeHowTo').onclick = () => howTo.close();
+document.querySelectorAll('[data-help-dot]').forEach((b) => {
+  b.onclick = () => showHelpStep(Number(b.dataset.helpDot));
+});
+helpCarousel.addEventListener('scroll', () => {
+  cancelAnimationFrame(helpScrollFrame);
+  helpScrollFrame = requestAnimationFrame(() =>
+    updateHelpDots(
+      Math.round(helpCarousel.scrollLeft / helpCarousel.clientWidth),
+    ),
+  );
+});
+function helpKeys(e) {
+  let next = helpStep;
+  if (e.key === 'ArrowRight') next = Math.min(2, helpStep + 1);
+  else if (e.key === 'ArrowLeft') next = Math.max(0, helpStep - 1);
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = 2;
+  else return;
+  e.preventDefault();
+  showHelpStep(next);
+  if (e.target.matches('[data-help-dot]'))
+    document.querySelector(`[data-help-dot="${next}"]`).focus();
+}
+helpCarousel.addEventListener('keydown', helpKeys);
+document.querySelector('.help-dots').addEventListener('keydown', helpKeys);
+let helpDrag = null;
+helpCarousel.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'mouse' || e.button !== 0) return;
+  helpDrag = { x: e.clientX, left: helpCarousel.scrollLeft };
+  helpCarousel.setPointerCapture(e.pointerId);
+  helpCarousel.style.scrollSnapType = 'none';
+});
+helpCarousel.addEventListener('pointermove', (e) => {
+  if (helpDrag)
+    helpCarousel.scrollLeft = helpDrag.left + helpDrag.x - e.clientX;
+});
+function endHelpDrag() {
+  if (!helpDrag) return;
+  helpDrag = null;
+  helpCarousel.style.scrollSnapType = '';
+  showHelpStep(Math.round(helpCarousel.scrollLeft / helpCarousel.clientWidth));
+}
+helpCarousel.addEventListener('pointerup', endHelpDrag);
+helpCarousel.addEventListener('pointercancel', endHelpDrag);
+window.addEventListener('resize', () => {
+  if (howTo.open) showHelpStep(helpStep, true);
+});
+document
+  .querySelectorAll('[data-help-piece]')
+  .forEach((img) =>
+    img.setAttribute('href', `images/pieces/${img.dataset.helpPiece}.svg`),
+  );
+howTo.addEventListener('click', (e) => {
+  if (e.target === howTo) {
+    const r = howTo.getBoundingClientRect();
+    if (
+      e.clientX < r.left ||
+      e.clientX > r.right ||
+      e.clientY < r.top ||
+      e.clientY > r.bottom
+    )
+      howTo.close();
+  }
+});
+const statTip = document.getElementById('statTip');
+let tipOwner = null,
+  tipPinned = false;
+function statExplanation(key) {
+  const { median, threshold } = analyzeSplits(stats.slice(1, targetCount + 1));
+  const copy = {
+    square: [
+      'Square',
+      'The target for this leg. Each leg starts at the previous target.',
+    ],
+    best: ['Best', 'Fewest safe knight moves from the previous target.'],
+    moves: [
+      'Moves',
+      'Moves kept for this leg. Rewind clears moves on the unfinished leg.',
+    ],
+    split: [
+      'Split time',
+      'Time to reach this target, including retries. Hidden timer time still counts.',
+    ],
+    rewinds: [
+      'Rewinds',
+      `${undoCount} used this run. Each row counts retries for that target. Rewind keeps the timer running.`,
+    ],
+    extra: [
+      'Extra moves',
+      'Amber +N is how many moves exceeded the best route. Matching routes stay unmarked.',
+    ],
+    slow: [
+      'Slow split',
+      threshold === null
+        ? 'Compared after 5 targets. Split time per move must exceed both 1.75× the run median and the median + 0.75 seconds. Retries count toward time.'
+        : `Split time per move exceeds ${threshold.toFixed(2)} seconds. This is the higher of 1.75× the run median or the median + 0.75 seconds. Retries count toward time.`,
+    ],
+  };
+  return copy[key];
+}
+function hideStatTip() {
+  if (statTip.matches(':popover-open')) statTip.hidePopover();
+  if (tipOwner) {
+    tipOwner.setAttribute('aria-expanded', 'false');
+    tipOwner.removeAttribute('aria-describedby');
+  }
+  tipOwner = null;
+  tipPinned = false;
+}
+function showStatTip(owner, pin = false) {
+  if (tipOwner === owner && tipPinned && !pin) return;
+  hideStatTip();
+  tipOwner = owner;
+  tipPinned = pin;
+  const [title, text] = statExplanation(owner.dataset.statTip);
+  document.getElementById('statTipTitle').textContent = title;
+  document.getElementById('statTipText').textContent =
+    (owner.dataset.statNote ? owner.dataset.statNote + '. ' : '') + text;
+  owner.setAttribute('aria-expanded', 'true');
+  owner.setAttribute('aria-describedby', 'statTipText');
+  statTip.showPopover();
+  const r = owner.getBoundingClientRect(),
+    box = statTip.getBoundingClientRect();
+  statTip.style.left =
+    Math.max(
+      12,
+      Math.min(
+        innerWidth - box.width - 12,
+        r.left + r.width / 2 - box.width / 2,
+      ),
+    ) + 'px';
+  const below = r.bottom + 8;
+  statTip.style.top =
+    Math.max(
+      12,
+      Math.min(
+        innerHeight - box.height - 12,
+        below + box.height < innerHeight - 12 ? below : r.top - box.height - 8,
+      ),
+    ) + 'px';
+}
+statsPanel.addEventListener('pointerover', (e) => {
+  const b = e.target.closest('[data-stat-tip]');
+  if (b && e.pointerType === 'mouse' && !tipPinned) showStatTip(b);
+});
+statsPanel.addEventListener('pointerout', (e) => {
+  const b = e.target.closest('[data-stat-tip]');
+  if (
+    b &&
+    b === tipOwner &&
+    !tipPinned &&
+    !b.contains(e.relatedTarget) &&
+    !statTip.contains(e.relatedTarget)
+  )
+    hideStatTip();
+});
+statsPanel.addEventListener('focusin', (e) => {
+  const b = e.target.closest('[data-stat-tip]');
+  if (b && !tipPinned) showStatTip(b);
+});
+statsPanel.addEventListener('focusout', (e) => {
+  if (
+    !tipPinned &&
+    !statTip.contains(e.relatedTarget) &&
+    !e.relatedTarget?.closest('[data-stat-tip]')
+  )
+    hideStatTip();
+});
+statsPanel.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-stat-tip]');
+  if (b) {
+    if (tipOwner === b && tipPinned) hideStatTip();
+    else showStatTip(b, true);
+  } else if (!statTip.contains(e.target)) hideStatTip();
+});
+document.getElementById('closeStatTip').onclick = () => hideStatTip();
+statsPanel.addEventListener('cancel', (e) => {
+  if (statTip.matches(':popover-open')) {
+    e.preventDefault();
+    hideStatTip();
+  }
+});
+statsPanel.addEventListener('close', hideStatTip);
+statsPanel.querySelector('.table-wrap').addEventListener('scroll', hideStatTip);
+window.addEventListener('resize', hideStatTip);
+document.querySelectorAll('[data-stat-tip]').forEach((b) => {
+  b.setAttribute('aria-controls', 'statTip');
+  b.setAttribute('aria-haspopup', 'dialog');
+  b.setAttribute('aria-expanded', 'false');
+});
+
+updateMotion();
 
 // Offline support. A new app version is applied only between games so a reload never loses a run.
 let swRegistration = null;

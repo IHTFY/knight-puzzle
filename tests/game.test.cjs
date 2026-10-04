@@ -32,6 +32,8 @@ function game(globals = {}) {
             classes.has(name) ? classes.delete(name) : classes.add(name),
           contains: (name) => classes.has(name),
         },
+        querySelector: (selector) => element(selector),
+        matches: () => false,
         addEventListener(event, handler) {
           this[event] = handler;
         },
@@ -42,10 +44,15 @@ function game(globals = {}) {
   const context = vm.createContext({
     document: {
       getElementById: element,
-      querySelector: () => null,
+      querySelector: (selector) =>
+        selector === '.help-dots' ? element('helpDots') : null,
+      querySelectorAll: () => [],
       addEventListener() {},
     },
-    window: {},
+    window: { addEventListener() {} },
+    matchMedia: () => ({ matches: false, addEventListener() {} }),
+    requestAnimationFrame: () => 1,
+    cancelAnimationFrame() {},
     performance: { now: () => now },
     setInterval(fn) {
       intervals.add(fn);
@@ -259,10 +266,6 @@ test('stats mark only excess moves and slow completed splits, normalized by actu
     g.element('statsDisplay').innerHTML,
     /class="slow-split"/,
   );
-  assert.equal(
-    g.element('statsNote').textContent,
-    'Time comparison after 5 targets.',
-  );
 });
 
 test('slow split thresholds handle an even median and small timing differences', () => {
@@ -307,6 +310,34 @@ test('best routes are safe and shortest for every pair of safe squares', () => {
     }
   }
   assert.equal(g.run("shortestRoute('h8', null).length"), 0);
+});
+
+test('route cache reuses the remaining path and searches only for new destinations', () => {
+  const g = game();
+  g.run("const initialRoute = routeForPosition('h8', 'a1')");
+  const initial = JSON.parse(g.run('JSON.stringify(initialRoute)'));
+  assert.equal(g.run("routeForPosition('h8', 'a1') === initialRoute"), true);
+  const trees = g.run('routeTrees.size');
+  g.run(`const remainingRoute = routeForPosition('${initial[1]}', 'a1')`);
+  assert.deepEqual(
+    JSON.parse(g.run('JSON.stringify(remainingRoute)')),
+    initial.slice(1),
+  );
+  assert.equal(g.run('routeTrees.size'), trees);
+  assert.equal(
+    g.run(`routeForPosition('${initial[1]}', 'a1') === remainingRoute`),
+    true,
+  );
+  const detour = safe.find((square) => !initial.includes(square));
+  assert.deepEqual(
+    JSON.parse(g.run(`JSON.stringify(routeForPosition('${detour}', 'a1'))`)),
+    JSON.parse(g.run(`JSON.stringify(shortestRoute('${detour}', 'a1'))`)),
+  );
+  assert.equal(g.run('routeTrees.size'), trees);
+  g.run("routeForPosition('h8', 'f8')");
+  assert.equal(g.run('routeTrees.size'), trees + 1);
+  assert.equal(g.run("shortestRoute('h8', 'a8').length"), 0);
+  assert.equal(g.run("routeForPosition('h8', null).length"), 0);
 });
 
 test('rewind clears only the current leg and preserves elapsed time and completed stats', () => {
