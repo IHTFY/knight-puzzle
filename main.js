@@ -58,6 +58,74 @@ let targetCount = 0;
 let t_start = null;
 let undoCount = 0;
 let showRoute = false;
+let routeDrawingKey = null;
+const routeGraph = new Map();
+const routeTrees = new Map();
+let cachedRoute = [],
+  cachedDestination = null;
+function shortestRoute(source, target) {
+  if (!target || inQVision(source) || inQVision(target)) return [];
+  if (!routeGraph.size) {
+    for (const file of 'abcdefgh')
+      for (let rank = 1; rank <= 8; rank++) {
+        const square = file + rank;
+        if (inQVision(square)) continue;
+        const neighbors = [];
+        for (const [dx, dy] of [
+          [-2, -1],
+          [-2, 1],
+          [-1, -2],
+          [-1, 2],
+          [1, -2],
+          [1, 2],
+          [2, -1],
+          [2, 1],
+        ]) {
+          const f = file.charCodeAt(0) + dx,
+            r = rank + dy;
+          if (f < 97 || f > 104 || r < 1 || r > 8) continue;
+          const next = String.fromCharCode(f) + r;
+          if (!inQVision(next)) neighbors.push(next);
+        }
+        routeGraph.set(square, neighbors);
+      }
+  }
+  if (!routeGraph.has(source) || !routeGraph.has(target)) return [];
+  let distances = routeTrees.get(target);
+  if (!distances) {
+    distances = new Map([[target, 0]]);
+    const queue = [target];
+    for (let head = 0; head < queue.length; head++) {
+      const square = queue[head];
+      for (const next of routeGraph.get(square))
+        if (!distances.has(next)) {
+          distances.set(next, distances.get(square) + 1);
+          queue.push(next);
+        }
+    }
+    routeTrees.set(target, distances);
+  }
+  if (!distances.has(source)) return [];
+  const path = [source];
+  while (path.at(-1) !== target) {
+    const square = path.at(-1);
+    path.push(
+      routeGraph
+        .get(square)
+        .find((next) => distances.get(next) === distances.get(square) - 1),
+    );
+  }
+  return path;
+}
+function routeForPosition(source, target) {
+  if (target === cachedDestination && cachedRoute[0] === source)
+    return cachedRoute;
+  if (target === cachedDestination && cachedRoute[1] === source)
+    cachedRoute = cachedRoute.slice(1);
+  else cachedRoute = shortestRoute(source, target);
+  cachedDestination = target;
+  return cachedRoute;
+}
 
 const statsPanel = document.getElementById('statsPanel');
 const statsDisplay = document.getElementById('statsDisplay');
@@ -398,35 +466,6 @@ if (typeof ResizeObserver !== 'undefined') {
   );
 }
 
-function shortestRoute(source, target) {
-  if (!target) return [];
-  const queue = [[source]],
-    seen = new Set([source]);
-  for (const path of queue) {
-    const square = path.at(-1);
-    if (square === target) return path;
-    for (const [dx, dy] of [
-      [-2, -1],
-      [-2, 1],
-      [-1, -2],
-      [-1, 2],
-      [1, -2],
-      [1, 2],
-      [2, -1],
-      [2, 1],
-    ]) {
-      const file = square.charCodeAt(0) + dx,
-        rank = Number(square[1]) + dy;
-      if (file < 97 || file > 104 || rank < 1 || rank > 8) continue;
-      const next = String.fromCharCode(file) + rank;
-      if (!inQVision(next) && !seen.has(next)) {
-        seen.add(next);
-        queue.push([...path, next]);
-      }
-    }
-  }
-  return [];
-}
 function renderRoute() {
   const overlay = document.getElementById('routeOverlay');
   const realBoard = document.querySelector('.board-b72b1');
@@ -440,8 +479,11 @@ function renderRoute() {
     width: `${rect.width}px`,
     height: `${rect.height}px`,
   });
+  const route = showRoute ? routeForPosition(currentSquare, nextTarget) : [];
+  const drawingKey = `${showRoute}:${route.join(',')}`;
+  if (drawingKey === routeDrawingKey) return;
+  routeDrawingKey = drawingKey;
   overlay.innerHTML = '';
-  const route = showRoute ? shortestRoute(currentSquare, nextTarget) : [];
   const steps = Math.max(0, route.length - 1);
   document.getElementById('routeCount').textContent = showRoute
     ? `${steps} move${steps === 1 ? '' : 's'}`
@@ -454,6 +496,7 @@ function renderRoute() {
     x: (square.charCodeAt(0) - 97) * 100 + 50,
     y: (8 - Number(square[1])) * 100 + 50,
   });
+  const arrows = [];
   for (let i = route.length - 1; i >= 1; i--) {
     const a = point(route[i - 1]),
       b = point(route[i]),
@@ -469,8 +512,11 @@ function renderRoute() {
     const head = `M ${tip.x} ${tip.y} L ${base.x + px * 26} ${base.y + py * 26} L ${base.x - px * 26} ${base.y - py * 26} Z`;
     const shaft = `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
     const number = { x: tip.x - ux * (104 / 3), y: tip.y - uy * (104 / 3) };
-    overlay.innerHTML += `<g data-route-step="${i}"><path class="route-arrow" d="${shaft}"/><path class="route-head" data-step="${i}" d="${head}"/><text class="route-number" x="${number.x}" y="${number.y}">${i}</text></g>`;
+    arrows.push(
+      `<g data-route-step="${i}"><path class="route-arrow" d="${shaft}"/><path class="route-head" data-step="${i}" d="${head}"/><text class="route-number" x="${number.x}" y="${number.y}">${i}</text></g>`,
+    );
   }
+  overlay.innerHTML = arrows.join('');
 }
 
 document.getElementById('showRoute').addEventListener('click', () => {
