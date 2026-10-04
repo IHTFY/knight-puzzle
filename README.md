@@ -45,11 +45,28 @@ Icons are drawn in `images/icon.svg` (rounded) and `images/icon-maskable.svg`
 The libraries are checked in directly. Preserve upstream license headers when
 updating them. Major upgrades can be evaluated alongside the UI redesign.
 
-## Offline updates
+## Controls and stats
 
-The service worker precaches the complete game, including pieces and icons.
-Offline play is available after one successful online load on HTTPS or localhost.
-When changing any cached file, bump `CACHE_NAME` in `service-worker.js` and update
-`FILES_TO_CACHE` if files were added or renamed. A new version activates once all
-existing tabs using the previous version close, so an active game is not replaced
-mid-session. The site can also be served from a subdirectory.
+Drag the knight or click a destination. Arrow keys move board focus; Enter or
+Space moves the knight to the focused square. The queen and knight buttons toggle
+attacked squares and available moves independently. Click the timer card to hide
+or reveal elapsed time, or the targets card and next-square badge to toggle the
+target. Display settings survive Reset.
+
+Stats marks extra moves in amber and slow splits in lavender. Slow splits use
+seconds per actual move and compare with the median across completed targets.
+After five targets, a split is slow only if it exceeds both 1.75 times the median
+and the median plus 0.75 seconds per move. Comparisons update within the current
+run; no history is stored.
+
+## Deployment
+
+GitHub Pages publishes the root of `master` to <https://knightpuzzle.ihtfy.com/>.
+Merging to `master` updates the public site. Confirm the Pages deployment for the
+merge commit and check the live UI. The repository has no PR preview deployment.
+See [GitHub's publishing-source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+
+To roll back a release, revert its commit on `master`, run `npm run stamp` if any
+cached assets changed beyond the revert, and deploy the result. A revert does not
+remove Git history. Installed apps apply updates at the next idle point or Reset,
+so an active run keeps its current version until then.
