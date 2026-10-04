@@ -1164,3 +1164,54 @@ td {
     margin-top: 12px;
   }
 }
+
+/* Split bars sit behind the text; column headers stay above scrolling cells. */
+thead th {
+  z-index: 2;
+  background: var(--panel);
+}
+tbody th {
+  position: static;
+}
+td.split-cell {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+}
+td.split-cell::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: var(--split-base, var(--split-fill, 0%));
+  background: #76a4ed24;
+  border-radius: 4px;
+  z-index: -1;
+  pointer-events: none;
+}
+td.split-cell::after {
+  content: '';
+  position: absolute;
+  left: var(--split-cutoff, 0%);
+  top: 4px;
+  bottom: 4px;
+  width: var(--split-excess, 0%);
+  background: #d9839130;
+  border-radius: 0 4px 4px 0;
+  z-index: -1;
+  pointer-events: none;
+}
+td.split-cell.slow-split {
+  background: transparent;
+}
+td.split-cell.slow-split::before {
+  border-radius: 4px 0 0 4px;
+}
+.stat-modifier.slow-dot {
+  color: #dfa4ad;
+}
+.time-mark {
+  background: #d69aa6;
+}

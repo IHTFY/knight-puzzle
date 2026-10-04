@@ -239,7 +239,7 @@ test('timer continues while hidden and restores elapsed time', () => {
   assert.equal(g.element('showTimer').attributes['aria-pressed'], 'true');
 });
 
-test('stats mark only excess moves and slow completed splits, normalized by actual moves', () => {
+test('stats mark only excess moves and slow completed splits, normalized by optimal moves', () => {
   const g = game();
   g.run(`targetCount = 8;
     const sample = [[2,4],[5,10],[6,12],[9,18],[7,14],[3,17],[6,12],[8,42]];
@@ -247,7 +247,7 @@ test('stats mark only excess moves and slow completed splits, normalized by actu
     updateStatsDisplay();`);
   const html = g.element('statsDisplay').innerHTML;
   assert.equal((html.match(/class="extra-moves"/g) || []).length, 3);
-  assert.equal((html.match(/class="slow-split"/g) || []).length, 2);
+  assert.equal((html.match(/class="split-cell slow-split"/g) || []).length, 2);
   const rows = html.split('<tr>').slice(1);
   assert.doesNotMatch(rows[0], /extra-moves|slow-split/);
   assert.doesNotMatch(
@@ -264,7 +264,7 @@ test('stats mark only excess moves and slow completed splits, normalized by actu
   g.run('targetCount = 4; updateStatsDisplay()');
   assert.doesNotMatch(
     g.element('statsDisplay').innerHTML,
-    /class="slow-split"/,
+    /class="split-cell slow-split"/,
   );
 });
 
@@ -273,17 +273,51 @@ test('slow split thresholds handle an even median and small timing differences',
   assert.equal(g.run('analyzeSplits([]).threshold'), null);
   assert.equal(
     g.run(
-      'analyzeSplits([1,2,3,4,5,6].map(split => ({moves:1,split}))).median',
+      'analyzeSplits([1,2,3,4,5,6].map(split => ({optimal:1,split}))).median',
     ),
     3.5,
   );
   assert.equal(
-    g.run('analyzeSplits(Array(5).fill({moves:1,split:0})).threshold'),
+    g.run('analyzeSplits(Array(5).fill({optimal:1,split:0})).threshold'),
     0.75,
   );
   assert.equal(
-    g.run('analyzeSplits(Array(5).fill({moves:1,split:2})).threshold'),
+    g.run('analyzeSplits(Array(5).fill({optimal:1,split:2})).threshold'),
     3.5,
+  );
+});
+
+test('extra player moves do not raise split allowances', () => {
+  const g = game();
+  g.run(
+    `targetCount=5; stats.slice(1,6).forEach(s=>{s.moves=s.optimal; s.split=s.optimal*2;}); updateStatsDisplay();`,
+  );
+  const cutoffs = (html) =>
+    [...html.matchAll(/data-cutoff-seconds="([^"]*)"/g)].map((m) => m[1]);
+  const before = cutoffs(g.element('statsDisplay').innerHTML);
+  assert.equal(g.run('analyzeSplits(stats.slice(1,6)).threshold'), 3.5);
+  g.run('stats.slice(1,6).forEach(s=>s.moves+=100); updateStatsDisplay();');
+  assert.equal(g.run('analyzeSplits(stats.slice(1,6)).threshold'), 3.5);
+  assert.deepEqual(cutoffs(g.element('statsDisplay').innerHTML), before);
+});
+
+test('new completed targets update earlier split cutoffs retroactively', () => {
+  const g = game();
+  g.run(
+    `targetCount=5; stats.slice(1,6).forEach((s,i)=>{s.moves=s.optimal; s.split=s.optimal*(i+1);}); updateStatsDisplay();`,
+  );
+  assert.equal(g.run('analyzeSplits(stats.slice(1,6)).threshold'), 5.25);
+  assert.match(
+    g.element('statsDisplay').innerHTML.split('<tr>')[1],
+    /data-cutoff-seconds="10.5"/,
+  );
+  g.run(
+    'targetCount=6; stats[6].moves=stats[6].optimal; stats[6].split=stats[6].optimal*10; updateStatsDisplay();',
+  );
+  assert.equal(g.run('analyzeSplits(stats.slice(1,7)).threshold'), 6.125);
+  assert.match(
+    g.element('statsDisplay').innerHTML.split('<tr>')[1],
+    /data-cutoff-seconds="12.25"/,
   );
 });
 
