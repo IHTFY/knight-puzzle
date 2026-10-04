@@ -43,6 +43,7 @@ const stats = targets.map((target) => ({
   moves: 0,
   time: 0,
   split: 0,
+  rewinds: 0,
 }));
 let nextTarget = targets[1].square;
 let currentSquare = targets[0].square;
@@ -55,6 +56,8 @@ let timerInterval = null;
 let moveCount = 0;
 let targetCount = 0;
 let t_start = null;
+let undoCount = 0;
+let showRoute = false;
 
 const statsPanel = document.getElementById('statsPanel');
 const statsDisplay = document.getElementById('statsDisplay');
@@ -82,6 +85,8 @@ function analyzeSplits(completed) {
 
 function updateStatsDisplay() {
   const { median, threshold } = analyzeSplits(stats.slice(1, targetCount + 1));
+  document.getElementById('rewindNote').textContent =
+    `${undoCount} rewind${undoCount === 1 ? '' : 's'}; split time includes retries.`;
   document.getElementById('statsNote').textContent =
     threshold === null
       ? 'Time comparison after 5 targets.'
@@ -106,6 +111,7 @@ function updateStatsDisplay() {
       <th scope="row">${stat.square}</th><td>${stat.optimal}</td>
       <td class="${extra > 0 ? 'extra-moves' : ''}" title="${moveTitle}">${completed ? stat.moves : '—'}${extra > 0 ? `<span class="extra-badge" aria-label="${moveTitle}">+${extra}</span>` : ''}</td>
       <td class="${slow ? 'slow-split' : ''}" title="${timeTitle}">${completed ? `${Number(stat.split).toFixed(2)}s` : '—'}${slow ? `<span class="slow-dot" role="img" aria-label="Slow split: ${timeTitle}"></span>` : ''}</td>
+      <td class="undo-cell">${completed ? stat.rewinds : '—'}</td>
     </tr>`;
     })
     .join('');
@@ -177,6 +183,11 @@ function renderHighlights() {
     .setAttribute('aria-pressed', String(showTargets));
   document.getElementById('progress').style.width =
     `${(targetCount / (targets.length - 1)) * 100}%`;
+  document.getElementById('undoCount').textContent = undoCount;
+  document.getElementById('rewind').disabled =
+    finished || !stats[targetCount + 1]?.moves;
+  document.getElementById('showRoute').disabled = finished;
+  renderRoute();
 }
 
 function announceTarget() {
@@ -217,6 +228,10 @@ const config = {
       nextTarget = targets[targetCount + 1]?.square ?? null;
       if (nextTarget === null) {
         finished = true;
+        showRoute = false;
+        document
+          .getElementById('showRoute')
+          .setAttribute('aria-pressed', 'false');
         clearInterval(timerInterval);
         timerInterval = null;
       }
@@ -271,14 +286,17 @@ boardElement.addEventListener('keydown', (event) => {
   }
 });
 
-document.getElementById('reset').addEventListener('click', () => {
+document.getElementById('confirmReset').addEventListener('click', () => {
+  document.getElementById('resetConfirm').close();
   board.position(initialPosition, false);
   currentSquare = targets[0].square;
   nextTarget = targets[1].square;
   finished = false;
-  moveCount = targetCount = 0;
+  moveCount = targetCount = undoCount = 0;
+  showRoute = false;
+  document.getElementById('showRoute').setAttribute('aria-pressed', 'false');
   stats.forEach((stat) => {
-    stat.moves = stat.time = stat.split = 0;
+    stat.moves = stat.time = stat.split = stat.rewinds = 0;
   });
   movesDisplay.textContent = targetCountDisplay.textContent = 0;
   t_start = null;
@@ -306,6 +324,17 @@ function updateTimer() {
     .join(':');
   timerDisplay.textContent = showTimer ? duration : '--:--:--';
 }
+
+document
+  .getElementById('reset')
+  .addEventListener('click', () =>
+    document.getElementById('resetConfirm').showModal(),
+  );
+document
+  .getElementById('cancelReset')
+  .addEventListener('click', () =>
+    document.getElementById('resetConfirm').close(),
+  );
 
 document.getElementById('showTimer').addEventListener('click', () => {
   showTimer = !showTimer;
@@ -369,11 +398,111 @@ if (typeof ResizeObserver !== 'undefined') {
   );
 }
 
+function shortestRoute(source, target) {
+  if (!target) return [];
+  const queue = [[source]],
+    seen = new Set([source]);
+  for (const path of queue) {
+    const square = path.at(-1);
+    if (square === target) return path;
+    for (const [dx, dy] of [
+      [-2, -1],
+      [-2, 1],
+      [-1, -2],
+      [-1, 2],
+      [1, -2],
+      [1, 2],
+      [2, -1],
+      [2, 1],
+    ]) {
+      const file = square.charCodeAt(0) + dx,
+        rank = Number(square[1]) + dy;
+      if (file < 97 || file > 104 || rank < 1 || rank > 8) continue;
+      const next = String.fromCharCode(file) + rank;
+      if (!inQVision(next) && !seen.has(next)) {
+        seen.add(next);
+        queue.push([...path, next]);
+      }
+    }
+  }
+  return [];
+}
+function renderRoute() {
+  const overlay = document.getElementById('routeOverlay');
+  const realBoard = document.querySelector('.board-b72b1');
+  if (!realBoard) return;
+  const rect = realBoard.getBoundingClientRect(),
+    wrap = document.querySelector('.board-wrap'),
+    bounds = wrap.getBoundingClientRect();
+  Object.assign(overlay.style, {
+    left: `${rect.left - bounds.left - wrap.clientLeft}px`,
+    top: `${rect.top - bounds.top - wrap.clientTop}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+  });
+  overlay.innerHTML = '';
+  const route = showRoute ? shortestRoute(currentSquare, nextTarget) : [];
+  const steps = Math.max(0, route.length - 1);
+  document.getElementById('routeCount').textContent = showRoute
+    ? `${steps} move${steps === 1 ? '' : 's'}`
+    : '';
+  document.getElementById('routeSummary').textContent = showRoute
+    ? `Best route from ${currentSquare}: ${route.join(', ')}.`
+    : '';
+  if (route.length < 2) return;
+  const point = (square) => ({
+    x: (square.charCodeAt(0) - 97) * 100 + 50,
+    y: (8 - Number(square[1])) * 100 + 50,
+  });
+  for (let i = route.length - 1; i >= 1; i--) {
+    const a = point(route[i - 1]),
+      b = point(route[i]),
+      dx = b.x - a.x,
+      dy = b.y - a.y,
+      length = Math.hypot(dx, dy);
+    const ux = dx / length,
+      uy = dy / length,
+      px = -uy,
+      py = ux;
+    const tip = b;
+    const base = { x: tip.x - ux * 52, y: tip.y - uy * 52 };
+    const head = `M ${tip.x} ${tip.y} L ${base.x + px * 26} ${base.y + py * 26} L ${base.x - px * 26} ${base.y - py * 26} Z`;
+    const shaft = `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+    const number = { x: tip.x - ux * (104 / 3), y: tip.y - uy * (104 / 3) };
+    overlay.innerHTML += `<g data-route-step="${i}"><path class="route-arrow" d="${shaft}"/><path class="route-head" data-step="${i}" d="${head}"/><text class="route-number" x="${number.x}" y="${number.y}">${i}</text></g>`;
+  }
+}
+
+document.getElementById('showRoute').addEventListener('click', () => {
+  showRoute = !showRoute;
+  document
+    .getElementById('showRoute')
+    .setAttribute('aria-pressed', String(showRoute));
+  renderRoute();
+  statusDisplay.textContent = showRoute
+    ? document.getElementById('routeSummary').textContent
+    : 'Route hidden.';
+});
+document.getElementById('rewind').addEventListener('click', () => {
+  if (finished || !stats[targetCount + 1]?.moves) return;
+  moveCount -= stats[targetCount + 1].moves;
+  stats[targetCount + 1].moves = 0;
+  stats[targetCount + 1].rewinds++;
+  undoCount++;
+  currentSquare = targets[targetCount].square;
+  board.position({ [currentSquare]: 'wN', d5: 'bQ' }, false);
+  movesDisplay.textContent = moveCount;
+  renderHighlights();
+  updateTimer();
+  updateStatsDisplay();
+  statusDisplay.textContent = `Rewound to ${currentSquare}. Timer continues. ${undoCount} rewinds used.`;
+});
+
 // Offline support. A new app version is applied only between games so a reload never loses a run.
 let swRegistration = null;
 let controllerChanged = false;
 function applyPendingUpdate() {
-  if (moveCount !== 0 || !swRegistration) return;
+  if (t_start !== null || !swRegistration) return;
   if (controllerChanged) location.reload();
   else if (swRegistration.waiting && navigator.serviceWorker.controller) {
     swRegistration.waiting.postMessage('skipWaiting');

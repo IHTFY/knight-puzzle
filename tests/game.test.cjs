@@ -40,7 +40,11 @@ function game(globals = {}) {
     return elements.get(id);
   }
   const context = vm.createContext({
-    document: { getElementById: element, addEventListener() {} },
+    document: {
+      getElementById: element,
+      querySelector: () => null,
+      addEventListener() {},
+    },
     window: {},
     performance: { now: () => now },
     setInterval(fn) {
@@ -169,7 +173,7 @@ test('complete a tour, freeze final results, then reset and start again', () => 
   assert.equal(g.intervals.size, 0);
   assert.equal(g.run('moveCount'), moves);
   assert.equal(g.element('timerDisplay').textContent, finalTime);
-  g.element('reset').click();
+  g.element('confirmReset').click();
   assert.equal(g.run('finished'), false);
   assert.equal(g.run('moveCount + targetCount'), 0);
   assert.equal(
@@ -204,7 +208,7 @@ test('target, queen, and knight hints remain independent and persist after reset
     undefined,
     'moves remain legal with hints hidden',
   );
-  g.element('reset').click();
+  g.element('confirmReset').click();
   assert.equal(has('d5', 'queen-attacked'), true);
   assert.equal(has('g6', 'knight-available'), false);
   g.element('nextTargetButton').click();
@@ -280,6 +284,86 @@ test('slow split thresholds handle an even median and small timing differences',
   );
 });
 
+test('best routes are safe and shortest for every pair of safe squares', () => {
+  const g = game();
+  for (const source of safe) {
+    for (const target of safe) {
+      const route = JSON.parse(
+        g.run(`JSON.stringify(shortestRoute('${source}', '${target}'))`),
+      );
+      assert.equal(route[0], source);
+      assert.equal(route.at(-1), target);
+      assert.equal(
+        route.length - 1,
+        source === target ? 0 : path(source, target).length,
+      );
+      for (let i = 1; i < route.length; i++) {
+        assert.ok(safe.includes(route[i]));
+        assert.equal(
+          g.run(`legalKnight('${route[i - 1]}', '${route[i]}')`),
+          true,
+        );
+      }
+    }
+  }
+  assert.equal(g.run("shortestRoute('h8', null).length"), 0);
+});
+
+test('rewind clears only the current leg and preserves elapsed time and completed stats', () => {
+  const g = game();
+  g.run("config.onDrop('h8', 'g6')");
+  const start = g.run('t_start');
+  g.advance(5000);
+  g.element('rewind').click();
+  assert.equal(g.run('currentSquare'), 'h8');
+  assert.equal(g.run('moveCount'), 0);
+  assert.equal(g.run('stats[1].moves'), 0);
+  assert.equal(g.run('undoCount'), 1);
+  assert.equal(g.run('t_start'), start);
+  assert.equal(g.intervals.size, 1);
+  assert.equal(g.element('timerDisplay').textContent, '00:00:05');
+  g.element('rewind').click();
+  assert.equal(g.run('undoCount'), 1, 'empty legs do not count as rewinds');
+  g.run("config.onDrop('h8', 'g6')");
+  g.advance(1000);
+  g.run("config.onDrop('g6', 'f8')");
+  const completed = g.run('JSON.stringify(stats[1])');
+  assert.equal(g.run('stats[1].moves'), 2);
+  assert.equal(g.run('stats[1].rewinds'), 1);
+  assert.equal(g.run('Number(stats[1].split)'), 6);
+  g.run("config.onDrop('f8', 'g6')");
+  g.element('rewind').click();
+  assert.equal(g.run('currentSquare'), 'f8');
+  assert.equal(g.run('nextTarget'), 'e8');
+  assert.equal(g.run('moveCount'), 2);
+  assert.equal(g.run('targetCount'), 1);
+  assert.equal(g.run('undoCount'), 2);
+  assert.equal(g.run('stats[2].rewinds'), 1);
+  assert.equal(g.run('JSON.stringify(stats[1])'), completed);
+  g.element('confirmReset').click();
+  assert.equal(g.run('undoCount'), 0);
+  assert.equal(g.run('stats.every(s => s.rewinds === 0)'), true);
+  assert.equal(g.run('t_start'), null);
+});
+
+test('reset opens confirmation and cancellation preserves the run', () => {
+  const g = game();
+  g.run("config.onDrop('h8', 'g6')");
+  g.element('reset').click();
+  assert.equal(g.element('resetConfirm').open, true);
+  assert.equal(g.run('moveCount'), 1);
+  g.element('cancelReset').click();
+  assert.equal(g.element('resetConfirm').open, false);
+  assert.equal(g.run('currentSquare'), 'g6');
+  assert.equal(g.intervals.size, 1);
+  g.element('reset').click();
+  g.element('confirmReset').click();
+  assert.equal(g.element('resetConfirm').open, false);
+  assert.equal(g.run('currentSquare'), 'h8');
+  assert.equal(g.run('moveCount'), 0);
+  assert.equal(g.intervals.size, 0);
+});
+
 test('app updates wait until no game is in progress', async () => {
   const listeners = {};
   const posted = [];
@@ -319,12 +403,19 @@ test('app updates wait until no game is in progress', async () => {
   installing.onchange();
   assert.deepEqual(posted, [], 'no update while a game is in progress');
 
+  // Rewinding to zero moves still leaves a run in progress.
+  g.element('rewind').click();
+  assert.equal(g.run('moveCount'), 0);
+  assert.equal(g.run('t_start !== null'), true);
+  g.run('applyPendingUpdate()');
+  assert.deepEqual(posted, []);
+
   // Another tab activates it: still no reload mid-game.
   listeners.controllerchange();
   assert.equal(reloads, 0);
 
   // Resetting applies the update.
-  g.element('reset').click();
+  g.element('confirmReset').click();
   assert.equal(reloads, 1);
 });
 
