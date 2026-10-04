@@ -155,8 +155,8 @@ const statusDisplay = document.getElementById('gameStatus');
 
 function analyzeSplits(completed) {
   const rates = completed
-    .filter((stat) => stat.moves > 0 && Number.isFinite(Number(stat.split)))
-    .map((stat) => Number(stat.split) / stat.moves)
+    .filter((stat) => stat.optimal > 0 && Number.isFinite(Number(stat.split)))
+    .map((stat) => Number(stat.split) / stat.optimal)
     .sort((a, b) => a - b);
   const n = rates.length;
   const median = n
@@ -171,14 +171,37 @@ function analyzeSplits(completed) {
 }
 
 function updateStatsDisplay() {
+  const longestSplit = Math.max(
+    0,
+    ...stats
+      .slice(1, targetCount + 1)
+      .map((stat) => Math.max(0, Number(stat.split) || 0)),
+  );
   const { median, threshold } = analyzeSplits(stats.slice(1, targetCount + 1));
   statsDisplay.innerHTML = stats
     .slice(1)
     .map((stat, i) => {
       const completed = i < targetCount;
       const extra = completed ? stat.moves - stat.optimal : 0;
-      const rate = completed ? Number(stat.split) / stat.moves : 0;
+      const rate =
+        completed && stat.optimal > 0 ? Number(stat.split) / stat.optimal : 0;
       const slow = completed && threshold !== null && rate > threshold;
+      const cutoffSeconds =
+        completed && threshold !== null && stat.optimal > 0
+          ? threshold * stat.optimal
+          : null;
+      const fill =
+        completed && longestSplit > 0
+          ? Math.min(
+              100,
+              (Math.max(0, Number(stat.split) || 0) / longestSplit) * 100,
+            )
+          : 0;
+      const cutoff =
+        cutoffSeconds !== null && longestSplit > 0
+          ? (cutoffSeconds / longestSplit) * 100
+          : null;
+      const excess = cutoff === null ? 0 : Math.max(0, fill - cutoff);
       const moveTitle =
         extra > 0
           ? `${extra} extra move${extra === 1 ? '' : 's'} above the best route`
@@ -186,12 +209,12 @@ function updateStatsDisplay() {
             ? 'Matches the best route'
             : '';
       const timeTitle = slow
-        ? `${rate.toFixed(2)} seconds per move; run median ${median.toFixed(2)} seconds per move`
+        ? `${rate.toFixed(2)} seconds per optimal move; cutoff ${cutoffSeconds.toFixed(2)}s for ${stat.optimal} optimal moves; ${(Number(stat.split) - cutoffSeconds).toFixed(2)}s above cutoff`
         : '';
       return `<tr>
       <th scope="row">${stat.square}</th><td>${stat.optimal}</td>
       <td class="${extra > 0 ? 'extra-moves' : ''}" >${completed ? stat.moves : '—'}${extra > 0 ? `<button class="stat-modifier extra-badge" aria-haspopup="dialog" aria-controls="statTip" aria-expanded="false" data-stat-tip="extra" data-stat-note="${moveTitle}" aria-label="${moveTitle}. Show explanation">+${extra}</button>` : ''}</td>
-      <td class="${slow ? 'slow-split' : ''}" >${completed ? `${Number(stat.split).toFixed(2)}s` : '—'}${slow ? `<button class="stat-modifier slow-dot" aria-haspopup="dialog" aria-controls="statTip" aria-expanded="false" data-stat-tip="slow" data-stat-note="${timeTitle}" aria-label="Slow split. Show explanation"></button>` : ''}</td>
+      <td class="split-cell ${slow ? 'slow-split' : ''}" style="--split-fill:${fill}%;--split-base:${cutoff === null ? fill : Math.min(fill, cutoff)}%;--split-cutoff:${cutoff === null ? 0 : Math.min(100, cutoff)}%;--split-excess:${excess}%" data-cutoff-seconds="${cutoffSeconds === null ? '' : cutoffSeconds}" >${completed ? `${Number(stat.split).toFixed(2)}s` : '—'}${slow ? `<button class="stat-modifier slow-dot" aria-haspopup="dialog" aria-controls="statTip" aria-expanded="false" data-stat-tip="slow" data-stat-note="${timeTitle}" aria-label="Slow split. Show explanation"></button>` : ''}</td>
       <td class="undo-cell">${completed ? stat.rewinds : '—'}</td>
     </tr>`;
     })
@@ -856,7 +879,7 @@ function statExplanation(key) {
     ],
     split: [
       'Split time',
-      'Time to reach this target, including retries. Hidden timer time still counts.',
+      'Time to reach this target, including retries. Bar width compares this time with the longest split. Blue shows used time up to the slow cutoff; red shows excess. The remaining space is unused. One seconds-per-optimal-move cutoff applies to every completed row, using its optimal move count, and updates throughout the run. Extra moves do not raise the time allowance. Hidden timer time still counts.',
     ],
     rewinds: [
       'Rewinds',
@@ -869,8 +892,8 @@ function statExplanation(key) {
     slow: [
       'Slow split',
       threshold === null
-        ? 'Compared after 5 targets. Split time per move must exceed both 1.75× the run median and the median + 0.75 seconds. Retries count toward time.'
-        : `Split time per move exceeds ${threshold.toFixed(2)} seconds. This is the higher of 1.75× the run median or the median + 0.75 seconds. Retries count toward time.`,
+        ? 'Compared after 5 targets. Split time per optimal move must exceed both 1.75× the run median and the median + 0.75 seconds. Retries count toward time.'
+        : `Split time per optimal move exceeds ${threshold.toFixed(2)} seconds. This is the higher of 1.75× the run median or the median + 0.75 seconds. Retries count toward time.`,
     ],
   };
   return copy[key];
