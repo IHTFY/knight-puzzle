@@ -38,12 +38,12 @@ Icons are drawn in `images/icon.svg` (rounded) and `images/icon-maskable.svg`
 ## Vendored dependencies
 
 - jQuery 3.7.1: <https://code.jquery.com/jquery-3.7.1.min.js>
-- Bulma 0.9.4: <https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css>
 - chessboard.js 1.0.0: <https://chessboardjs.com/download>
 - Original Alpha pieces: [attribution and terms](licenses/alpha.md).
 
-The libraries are checked in directly. Preserve upstream license headers when
-updating them. Major upgrades can be evaluated alongside the UI redesign.
+The interface uses custom CSS and JavaScript. chessboard.js renders the board and
+handles dragging. It requires jQuery. Preserve upstream license headers when
+updating the vendored libraries.
 
 ## Controls and stats
 
