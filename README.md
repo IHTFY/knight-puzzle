@@ -53,16 +53,22 @@ attacked squares and available moves independently. Click the timer card to hide
 or reveal elapsed time, or the targets card and next-square badge to toggle the
 target. Display settings survive Reset.
 
-Best route shows numbered, center-to-center arrows from the current square to the
-next target. Step 1 draws on top. Rewind returns to the last reached target and
+Best route shows a numbered, continuous curve from the current square to the next
+target. Amber pulses flow toward the target. Earlier steps draw on top, with the
+knight above the curve. Reduced motion pauses the animation. Rewind returns to the last reached target and
 clears moves from the current leg while keeping the timer and completed stats.
 The Moves card and Stats track rewinds. Split time includes discarded attempts.
 Rewind is disabled for an empty leg or a completed run. Full Reset requires
-confirmation and clears all moves, targets, rewinds, route arrows, and the timer.
+confirmation and clears all moves, targets, rewinds, the route, and the timer.
 
 Route searches cache distances to each target. Following the shown route reuses
 its remaining moves; a detour chooses a shortest route from the new square.
-Unchanged route displays skip rebuilding their SVG elements.
+Unchanged route displays skip rebuilding their SVG elements. Curve geometry and
+animation colors are cached; following the route reuses its remaining curves.
+
+The information icon opens three illustrated instructions. Swipe, click a dot, or
+use arrow keys to change slides. Stats headers and highlight badges explain their
+meaning on hover, keyboard focus, or tap.
 
 Stats marks extra moves in amber and slow splits in lavender. Slow splits use
 seconds per actual move and compare with the median across completed targets.
