@@ -70,11 +70,15 @@ The information icon opens three illustrated instructions. Swipe, click a dot, o
 use arrow keys to change slides. Stats headers and highlight badges explain their
 meaning on hover, keyboard focus, or tap.
 
-Stats marks extra moves in amber and slow splits in lavender. Slow splits use
-seconds per actual move and compare with the median across completed targets.
+Stats marks extra moves in amber. Split times have subtle blue background bars
+scaled to the longest completed split, with muted red showing time above the slow
+cutoff. Zero and pending splits have no fill. Slow splits use seconds per optimal
+move and compare with the median across completed targets.
 After five targets, a split is slow only if it exceeds both 1.75 times the median
-and the median plus 0.75 seconds per move. Comparisons update within the current
-run; no history is stored.
+and the median plus 0.75 seconds per optimal move. The shared cutoff is multiplied
+by each target's optimal moves to get its allowance in seconds. Extra player moves
+do not increase that allowance; retries still count toward time. Comparisons
+update all completed rows as the run progresses; no history is stored.
 
 ## Deployment
 
