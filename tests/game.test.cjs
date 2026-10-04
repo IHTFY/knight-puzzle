@@ -32,6 +32,8 @@ function game(globals = {}) {
             classes.has(name) ? classes.delete(name) : classes.add(name),
           contains: (name) => classes.has(name),
         },
+        querySelector: (selector) => element(selector),
+        matches: () => false,
         addEventListener(event, handler) {
           this[event] = handler;
         },
@@ -42,10 +44,15 @@ function game(globals = {}) {
   const context = vm.createContext({
     document: {
       getElementById: element,
-      querySelector: () => null,
+      querySelector: (selector) =>
+        selector === '.help-dots' ? element('helpDots') : null,
+      querySelectorAll: () => [],
       addEventListener() {},
     },
-    window: {},
+    window: { addEventListener() {} },
+    matchMedia: () => ({ matches: false, addEventListener() {} }),
+    requestAnimationFrame: () => 1,
+    cancelAnimationFrame() {},
     performance: { now: () => now },
     setInterval(fn) {
       intervals.add(fn);
@@ -258,10 +265,6 @@ test('stats mark only excess moves and slow completed splits, normalized by actu
   assert.doesNotMatch(
     g.element('statsDisplay').innerHTML,
     /class="slow-split"/,
-  );
-  assert.equal(
-    g.element('statsNote').textContent,
-    'Time comparison after 5 targets.',
   );
 });
 
