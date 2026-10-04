@@ -5,7 +5,7 @@ const vm = require('node:vm');
 
 function game(globals = {}) {
   const elements = new Map();
-  const colors = new Map();
+  const squareClasses = new Map();
   const intervals = new Set();
   let now = 1000;
   let position;
@@ -13,35 +13,74 @@ function game(globals = {}) {
     if (!elements.has(id)) {
       const classes = new Set();
       elements.set(id, {
-        textContent: '', innerHTML: '',
-        classList: {
-          remove: name => classes.delete(name),
-          toggle: name => classes.has(name) ? classes.delete(name) : classes.add(name),
-          contains: name => classes.has(name),
+        textContent: '',
+        innerHTML: '',
+        style: {},
+        attributes: {},
+        setAttribute(name, value) {
+          this.attributes[name] = value;
         },
-        addEventListener(event, handler) { this[event] = handler; },
+        showModal() {
+          this.open = true;
+        },
+        close() {
+          this.open = false;
+        },
+        classList: {
+          remove: (name) => classes.delete(name),
+          toggle: (name) =>
+            classes.has(name) ? classes.delete(name) : classes.add(name),
+          contains: (name) => classes.has(name),
+        },
+        addEventListener(event, handler) {
+          this[event] = handler;
+        },
       });
     }
     return elements.get(id);
   }
   const context = vm.createContext({
-    document: { getElementById: element, addEventListener() {} }, window: {},
+    document: { getElementById: element, addEventListener() {} },
+    window: {},
     performance: { now: () => now },
-    setInterval(fn) { intervals.add(fn); return fn; },
-    clearInterval(fn) { intervals.delete(fn); },
-    Chessboard: () => ({ position(value) { position = value; }, resize() {} }),
-    $: selector => ({
-      css(property, value) {
-        if (selector === '#board .square-55d63') colors.clear();
-        else colors.set(selector, value);
+    setInterval(fn) {
+      intervals.add(fn);
+      return fn;
+    },
+    clearInterval(fn) {
+      intervals.delete(fn);
+    },
+    Chessboard: () => ({
+      position(value) {
+        position = value;
       },
+      resize() {},
+    }),
+    $: (selector) => ({
+      addClass(name) {
+        if (!squareClasses.has(selector))
+          squareClasses.set(selector, new Set());
+        squareClasses.get(selector).add(name);
+      },
+      removeClass(names) {
+        for (const classes of squareClasses.values())
+          for (const name of names.split(' ')) classes.delete(name);
+      },
+      attr() {},
       resize() {},
     }),
     ...globals,
   });
-  const run = code => vm.runInContext(code, context);
+  const run = (code) => vm.runInContext(code, context);
   run(readFileSync(new URL('../main.js', `file://${__filename}`), 'utf8'));
-  return { run, element, colors, intervals, advance: ms => now += ms, position: () => position };
+  return {
+    run,
+    element,
+    squareClasses,
+    intervals,
+    advance: (ms) => (now += ms),
+    position: () => position,
+  };
 }
 
 // Independently enumerate safe squares and shortest knight paths.
@@ -73,10 +112,18 @@ function path(source, target) {
 
 test('targets cover all safe squares in order and best counts are shortest paths', () => {
   const g = game();
-  assert.deepEqual(JSON.parse(g.run('JSON.stringify(targets.map(t => t.square))')), safe);
-  const optimal = JSON.parse(g.run('JSON.stringify(targets.map(t => t.optimal))'));
-  assert.deepEqual(optimal, safe.map((square, i) => i ? path(safe[i - 1], square).length : 0));
-  assert.match(g.element('statsDisplay').innerHTML, /<th>e8<\/th>/);
+  assert.deepEqual(
+    JSON.parse(g.run('JSON.stringify(targets.map(t => t.square))')),
+    safe,
+  );
+  const optimal = JSON.parse(
+    g.run('JSON.stringify(targets.map(t => t.optimal))'),
+  );
+  assert.deepEqual(
+    optimal,
+    safe.map((square, i) => (i ? path(safe[i - 1], square).length : 0)),
+  );
+  assert.match(g.element('statsDisplay').innerHTML, /<th scope="row">e8<\/th>/);
 });
 
 test('rejects illegal, attacked, and off-board drops and prevents moving the queen', () => {
@@ -100,7 +147,10 @@ test('complete a tour, freeze final results, then reset and start again', () => 
   for (const target of safe.slice(1)) {
     for (const destination of path(source, target)) {
       g.advance(1100);
-      assert.equal(g.run(`config.onDrop('${source}', '${destination}')`), undefined);
+      assert.equal(
+        g.run(`config.onDrop('${source}', '${destination}')`),
+        undefined,
+      );
       source = destination;
       moves++;
     }
@@ -122,23 +172,112 @@ test('complete a tour, freeze final results, then reset and start again', () => 
   g.element('reset').click();
   assert.equal(g.run('finished'), false);
   assert.equal(g.run('moveCount + targetCount'), 0);
-  assert.equal(g.run('stats.every(s => s.moves === 0 && s.time === 0 && s.split === 0)'), true);
+  assert.equal(
+    g.run('stats.every(s => s.moves === 0 && s.time === 0 && s.split === 0)'),
+    true,
+  );
   assert.equal(g.element('timerDisplay').textContent, '00:00:00');
   assert.equal(g.position(), g.run('initialPosition'));
   g.run("config.onDrop('h8', 'g6')");
   assert.equal(g.intervals.size, 1);
 });
 
-test('hiding targets preserves Queen Vision, including after reset', () => {
+test('target, queen, and knight hints remain independent and persist after reset', () => {
   const g = game();
+  const has = (square, name) =>
+    g.squareClasses.get(`#board .square-${square}`)?.has(name) ?? false;
+  assert.equal(has('f8', 'next-target'), true);
+  assert.equal(has('g6', 'knight-available'), true);
   g.element('queenVision').click();
   g.element('showTarget').click();
-  assert.equal(g.colors.get('#board .square-d5'), '#202020');
-  assert.notEqual(g.colors.get('#board .square-f8'), '#FF0000');
+  g.element('knightVision').click();
+  assert.equal(has('d5', 'queen-attacked'), true);
+  assert.equal(has('f8', 'next-target'), false);
+  assert.equal(has('g6', 'knight-available'), false);
+  assert.equal(g.element('nextTargetDisplay').textContent, '••');
+  assert.equal(
+    g.element('nextTargetButton').attributes['aria-pressed'],
+    'false',
+  );
+  assert.equal(
+    g.run("config.onDrop('h8', 'g6')"),
+    undefined,
+    'moves remain legal with hints hidden',
+  );
   g.element('reset').click();
-  assert.equal(g.colors.get('#board .square-d5'), '#202020');
-  g.element('showTarget').click();
-  assert.equal(g.colors.get('#board .square-f8'), '#FF0000');
+  assert.equal(has('d5', 'queen-attacked'), true);
+  assert.equal(has('g6', 'knight-available'), false);
+  g.element('nextTargetButton').click();
+  assert.equal(has('f8', 'next-target'), true);
+  assert.equal(g.element('showTarget').attributes['aria-pressed'], 'true');
+  assert.equal(g.element('nextTargetDisplay').textContent, 'f8');
+  g.element('knightVision').click();
+  assert.equal(has('g6', 'knight-available'), true);
+});
+
+test('timer continues while hidden and restores elapsed time', () => {
+  const g = game();
+  g.run("config.onDrop('h8', 'g6')");
+  g.element('showTimer').click();
+  g.advance(61000);
+  g.run('updateTimer()');
+  assert.equal(g.element('timerDisplay').textContent, '--:--:--');
+  assert.equal(g.intervals.size, 1);
+  g.element('showTimer').click();
+  assert.equal(g.element('timerDisplay').textContent, '00:01:01');
+  assert.equal(g.element('showTimer').attributes['aria-pressed'], 'true');
+});
+
+test('stats mark only excess moves and slow completed splits, normalized by actual moves', () => {
+  const g = game();
+  g.run(`targetCount = 8;
+    const sample = [[2,4],[5,10],[6,12],[9,18],[7,14],[3,17],[6,12],[8,42]];
+    sample.forEach(([moves,split],i) => Object.assign(stats[i+1], { moves, split }));
+    updateStatsDisplay();`);
+  const html = g.element('statsDisplay').innerHTML;
+  assert.equal((html.match(/class="extra-moves"/g) || []).length, 3);
+  assert.equal((html.match(/class="slow-split"/g) || []).length, 2);
+  const rows = html.split('<tr>').slice(1);
+  assert.doesNotMatch(rows[0], /extra-moves|slow-split/);
+  assert.doesNotMatch(
+    rows[4],
+    /slow-split/,
+    'a longer route at normal pace is not slow',
+  );
+  assert.match(rows[5], /slow-split/, 'a perfect route may still be slow');
+  assert.doesNotMatch(
+    rows[8],
+    /extra-moves|slow-split/,
+    'unfinished targets have no warnings',
+  );
+  g.run('targetCount = 4; updateStatsDisplay()');
+  assert.doesNotMatch(
+    g.element('statsDisplay').innerHTML,
+    /class="slow-split"/,
+  );
+  assert.equal(
+    g.element('statsNote').textContent,
+    'Time comparison after 5 targets.',
+  );
+});
+
+test('slow split thresholds handle an even median and small timing differences', () => {
+  const g = game();
+  assert.equal(g.run('analyzeSplits([]).threshold'), null);
+  assert.equal(
+    g.run(
+      'analyzeSplits([1,2,3,4,5,6].map(split => ({moves:1,split}))).median',
+    ),
+    3.5,
+  );
+  assert.equal(
+    g.run('analyzeSplits(Array(5).fill({moves:1,split:0})).threshold'),
+    0.75,
+  );
+  assert.equal(
+    g.run('analyzeSplits(Array(5).fill({moves:1,split:2})).threshold'),
+    3.5,
+  );
 });
 
 test('app updates wait until no game is in progress', async () => {
@@ -147,24 +286,36 @@ test('app updates wait until no game is in progress', async () => {
   let reloads = 0;
   const registration = {
     waiting: null,
-    addEventListener(event, handler) { listeners[event] = handler; },
+    addEventListener(event, handler) {
+      listeners[event] = handler;
+    },
     update: async () => {},
   };
   const serviceWorker = {
     controller: {},
-    addEventListener(event, handler) { listeners[event] = handler; },
+    addEventListener(event, handler) {
+      listeners[event] = handler;
+    },
     register: async () => registration,
   };
-  const g = game({ navigator: { serviceWorker }, location: { reload: () => reloads++ } });
+  const g = game({
+    navigator: { serviceWorker },
+    location: { reload: () => reloads++ },
+  });
   await new Promise(setImmediate);
 
   // Start a game, then a new version finishes installing.
   g.run("config.onDrop('h8', 'g6')");
-  const installing = { state: 'installing', addEventListener(event, handler) { this.onchange = handler; } };
+  const installing = {
+    state: 'installing',
+    addEventListener(event, handler) {
+      this.onchange = handler;
+    },
+  };
   registration.installing = installing;
   listeners.updatefound();
   installing.state = 'installed';
-  registration.waiting = { postMessage: message => posted.push(message) };
+  registration.waiting = { postMessage: (message) => posted.push(message) };
   installing.onchange();
   assert.deepEqual(posted, [], 'no update while a game is in progress');
 
@@ -180,11 +331,15 @@ test('app updates wait until no game is in progress', async () => {
 test('a waiting update is activated straight away when idle', async () => {
   const posted = [];
   const registration = {
-    waiting: { postMessage: message => posted.push(message) },
+    waiting: { postMessage: (message) => posted.push(message) },
     addEventListener() {},
     update: async () => {},
   };
-  const serviceWorker = { controller: {}, addEventListener() {}, register: async () => registration };
+  const serviceWorker = {
+    controller: {},
+    addEventListener() {},
+    register: async () => registration,
+  };
   game({ navigator: { serviceWorker }, location: { reload() {} } });
   await new Promise(setImmediate);
   assert.deepEqual(posted, ['skipWaiting']);

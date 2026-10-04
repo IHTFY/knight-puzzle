@@ -1,18 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <meta name="description" content="Guide the knight to every safe square around the queen, in order, as quickly as possible." />
-    <meta name="theme-color" content="#201020" />
+    <meta
+      name="description"
+      content="Guide the knight to every safe square around the queen, in order, as quickly as possible."
+    />
+    <meta name="theme-color" content="#070f20" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Knight Puzzle" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <link rel="manifest" href="manifest.json" />
 
     <title>Knight Puzzle</title>
@@ -26,52 +32,177 @@
   </head>
   <body>
     <div class="app">
-      <header class="head">
-        <a
-          class="gh"
-          href="https://github.com/IHTFY/knight-puzzle"
-          aria-label="GitHub repository"
+      <header>
+        <div class="brand">
+          <img src="images/icon.svg" alt="" />
+          <h1>Knight Puzzle</h1>
+        </div>
+        <button
+          class="next"
+          id="nextTargetButton"
+          aria-label="Target visibility"
+          aria-pressed="true"
+          title="Show or hide the target"
         >
-          <svg id="gh_logo" height="28" width="28" viewBox="0 0 32 32" fill="white">
+          <span>Next</span><strong id="nextTargetDisplay">f8</strong
+          ><svg
+            class="eye"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <path
-              d="M16 0C7.2 0 0 7.2 0 16c0 7.1 4.6 13 11 15 .8 .14 1.1-.34 1.1-.76 0-.38-.02-1.6-.02-3-4 .74-5.1-.98-5.4-1.9-.18-.46-.96-1.9-1.6-2.3-.56-.3-1.4-1-.02-1.1 1.3-.02 2.2 1.2 2.5 1.6 1.4 2.4 3.7 1.7 4.7 1.3 .14-1 .56-1.7 1-2.1-3.6-.4-7.3-1.8-7.3-7.9 0-1.7 .62-3.2 1.6-4.3-.16-.4-.72-2 .16-4.2 0 0 1.3-.42 4.4 1.6 1.3-.36 2.6-.54 4-.54 1.4 0 2.7 .18 4 .54 3.1-2.1 4.4-1.6 4.4-1.6 .88 2.2 .32 3.8 .16 4.2 1 1.1 1.6 2.5 1.6 4.3 0 6.1-3.7 7.5-7.3 7.9 .58 .5 1.1 1.5 1.1 3 0 2.1-.02 3.9-.02 4.4 0 .42 .3 .92 1.1 .76A16 16 0 0 0 32 16c0-8.8-7.2-16-16-16z"
-            ></path>
+              d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
+            />
+            <circle cx="12" cy="12" r="2.6" />
+            <path class="eye-slash" d="m4 3 16 18" />
           </svg>
-        </a>
-        <h1 class="title-text">Knight Around the Queen</h1>
+        </button>
       </header>
-
-      <main class="stage">
-        <div id="boardContainer">
-          <div id="board"></div>
-        </div>
+      <main class="layout">
+        <section class="stage" aria-label="Game board">
+          <div class="board-wrap">
+            <div id="boardContainer">
+              <div id="board" aria-label="Chessboard"></div>
+            </div>
+          </div>
+        </section>
+        <section class="panel" aria-label="Game controls">
+          <div class="metrics">
+            <div class="metric">
+              <div class="label">Moves</div>
+              <div class="number" id="moveCount">0</div>
+            </div>
+            <button
+              class="metric interactive"
+              id="showTarget"
+              aria-label="Target visibility"
+              aria-pressed="true"
+              title="Show or hide the target"
+            >
+              <span class="metric-head"
+                ><span class="label">Targets</span
+                ><svg
+                  class="eye"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
+                  />
+                  <circle cx="12" cy="12" r="2.6" />
+                  <path class="eye-slash" d="m4 3 16 18" /></svg></span
+              ><span class="number"
+                ><span id="targetsHit">0</span><small> / 35</small></span
+              ><span class="progress" role="presentation"
+                ><span id="progress"></span
+              ></span></button
+            ><button
+              class="metric timer interactive"
+              id="showTimer"
+              aria-label="Timer visibility"
+              aria-pressed="true"
+              title="Show or hide the timer"
+            >
+              <span class="metric-head"
+                ><span class="label">Time</span
+                ><svg
+                  class="eye"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
+                  />
+                  <circle cx="12" cy="12" r="2.6" />
+                  <path class="eye-slash" d="m4 3 16 18" /></svg></span
+              ><span class="number" id="timerDisplay">00:00:00</span>
+            </button>
+          </div>
+          <div class="actions">
+            <div class="vision-buttons" role="group" aria-label="Board hints">
+              <button
+                class="action vision icon-button"
+                id="queenVision"
+                aria-label="Queen vision"
+                aria-pressed="false"
+                title="Queen: show attacked squares"
+              >
+                <svg
+                  class="piece-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m4 9 3 9h10l3-9-5 4-3-7-3 7-5-4ZM7 21h10M7 18h10" />
+                  <circle cx="3.5" cy="7" r="1" />
+                  <circle cx="12" cy="3.5" r="1" />
+                  <circle cx="20.5" cy="7" r="1" />
+                </svg></button
+              ><button
+                class="action vision icon-button"
+                id="knightVision"
+                aria-label="Knight moves"
+                aria-pressed="true"
+                title="Knight: show available moves"
+              >
+                <svg
+                  class="piece-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M6 21h13M7 18h11c0-4 1-6 0-9-1-3-4-5-8-6l-1 3-5 5 2 3 4-2c2 2-1 3-3 6ZM12 7h.01"
+                  />
+                </svg>
+              </button>
+            </div>
+            <button class="action" id="reset">Reset</button
+            ><button class="action primary" id="statsButton">Stats</button>
+          </div>
+        </section>
       </main>
-
-      <section class="controls">
-        <div class="cell">
-          <button class="button is-danger" id="reset">Reset</button>
-          <p class="value" id="moveCount">0</p>
-        </div>
-        <div class="cell">
-          <button class="button is-info" id="showTimer">Timer</button>
-          <p class="value" id="timerDisplay">00:00:00</p>
-        </div>
-        <div class="cell">
-          <button class="button is-info" id="showTarget">Hide Target</button>
-          <p class="value" id="targetsHit">0</p>
-        </div>
-        <div class="cell">
-          <button class="button is-info" id="queenVision">Queen Vision</button>
-        </div>
-        <div class="cell">
-          <button class="button is-info" id="statsButton">Stats</button>
-        </div>
-      </section>
     </div>
-
-    <div id="statsPanel" class="stats-overlay is-hidden">
-      <div class="stats-box">
-        <table class="table">
+    <span class="sr-only" id="sessionState"></span>
+    <p class="sr-only" id="gameStatus" role="status">
+      Click a marked square to move. Reach f8 next.
+    </p>
+    <dialog class="dialog" id="statsPanel" aria-labelledby="statsTitle">
+      <div class="dialog-head">
+        <h2 id="statsTitle">Stats</h2>
+        <button class="close" id="closeStats" aria-label="Close statistics">
+          ✕
+        </button>
+      </div>
+      <div class="stats-legend">
+        <span><i class="legend-mark route-mark"></i>Extra moves</span
+        ><span><i class="legend-mark time-mark"></i>Slow split</span>
+      </div>
+      <div class="table-wrap">
+        <table>
           <thead>
             <tr>
               <th>Square</th>
@@ -83,6 +214,7 @@
           <tbody id="statsDisplay"></tbody>
         </table>
       </div>
-    </div>
+      <p class="stats-note" id="statsNote"></p>
+    </dialog>
   </body>
 </html>
