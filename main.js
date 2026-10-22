@@ -1,5 +1,46 @@
 'use strict';
 
+// ads:start
+// The ad in the solved dialog comes from the shared IHTFY loader, which
+// ihtfy.com serves for all the games (its source is in the IHTFY/com.ihtfy
+// repo). Nothing ad-related loads before the first finished run: the loader
+// arrives then, and AdSense after it at browser idle.
+const ADS_LOADER = 'https://ihtfy.com/ads/v1.js';
+
+// The shared 300×250 display unit for the games' result screens.
+const AD_SLOT = '6470163205';
+
+let adLoader = null;
+
+/** Fills `box` with an ad for the game over named `key`; offline or on failure it stays empty. */
+function showAd(box, key) {
+  if (!navigator.onLine) return;
+  adLoader ??= new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = ADS_LOADER;
+    script.addEventListener('load', resolve);
+    script.addEventListener('error', () => {
+      script.remove();
+      adLoader = null;
+      reject(new Error('The ad loader did not load'));
+    });
+    document.head.appendChild(script);
+  });
+  adLoader.then(
+    () => box.isConnected && window.ihtfyAds.show(box, key),
+    () => {},
+  );
+}
+
+/** Swaps `box` for an empty copy, so callbacks still waiting on the old one find it detached. */
+function renewAdBox(box) {
+  const fresh = box.cloneNode(false);
+  box.replaceWith(fresh);
+  return fresh;
+}
+// ads:end
+
 const initialPosition = '7N/8/8/3q4/8/8/8/8 w - - 0 1';
 // Target order and best move counts are shared by gameplay and the stats table.
 const targets = [
@@ -302,6 +343,21 @@ function announceTarget() {
       : 'Target hidden.';
 }
 
+function showSolved() {
+  document.getElementById('solvedText').textContent =
+    `All ${targetCount} targets reached in ${moveCount} moves.`;
+  const box = document.getElementById('adBox');
+  box.dataset.adSlot = AD_SLOT;
+  document.getElementById('solvedPanel').showModal();
+  showAd(box, `${moveCount}/${Math.round(stats.at(-1).time)}`);
+}
+
+// Closing the dialog (button or Escape) retires its box: the loader won't fill one that
+// already holds an ad, and a request still pending must not land in the hidden dialog.
+document.getElementById('solvedPanel').addEventListener('close', () => {
+  renewAdBox(document.getElementById('adBox'));
+});
+
 const config = {
   draggable: true,
   pieceTheme: 'images/pieces/{piece}.svg',
@@ -344,6 +400,7 @@ const config = {
     renderHighlights();
     updateTimer();
     announceTarget();
+    if (finished) showSolved();
   },
   onDragMove: startTimer,
   onSnapEnd: renderHighlights,
@@ -471,6 +528,10 @@ document.getElementById('knightVision').addEventListener('click', () => {
     .setAttribute('aria-pressed', String(showMoves));
   renderHighlights();
 });
+
+document
+  .getElementById('closeSolved')
+  .addEventListener('click', () => document.getElementById('solvedPanel').close());
 
 document.getElementById('statsButton').addEventListener('click', () => {
   updateStatsDisplay();

@@ -69,6 +69,9 @@ for (const scope of ['https://example.com/', 'https://example.com/puzzle/']) {
     assert.equal(w.stores.has('unrelated-app'), true);
     assert.equal(w.claimed(), true);
     assert.equal(w.request('https://other.example/script.js'), undefined);
+    for (const ad of ['https://ihtfy.com/ads/v1.js', 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', 'https://fundingchoicesmessages.google.com/i/pub-1']) {
+      assert.equal(w.request(ad, 'no-cors'), undefined, `${ad} goes to the network`);
+    }
     assert.equal(w.request('./other-page', 'navigate'), undefined);
     assert.equal(w.request('./main.js', 'cors', 'POST'), undefined);
   });

@@ -1061,9 +1061,25 @@
         </div>
         <a class="help-support" href="https://ihtfy.com/support/" target="_blank" rel="noopener"
           >Support ♥</a
+        ><a class="help-support" href="https://ihtfy.com/privacy" target="_blank" rel="noopener"
+          >Privacy</a
         >
       </div>
       <span class="sr-only" id="helpAnnouncement" aria-live="polite"></span>
+    </dialog>
+
+    <dialog class="dialog solved-dialog" id="solvedPanel" aria-labelledby="solvedTitle">
+      <div class="dialog-head">
+        <h2 id="solvedTitle">Tour complete</h2>
+        <button class="close" id="closeSolved" aria-label="Close">✕</button>
+      </div>
+      <p id="solvedText"></p>
+      <!-- At least 150px below the close button; the box keeps its size whether or not an ad fills it. -->
+      <aside class="ad">
+        <p>Advertisements</p>
+        <div class="ad-box" id="adBox"></div>
+        <a href="https://ihtfy.com/privacy" target="_blank" rel="noopener">Privacy</a>
+      </aside>
     </dialog>
 
     <dialog
