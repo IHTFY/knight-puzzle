@@ -71,3 +71,14 @@ test('stays quiet when the loader fails, and tries again on the next game over',
   showAd(box(), 'b');
   assert.equal(added.length, 2);
 });
+
+test('a box swapped out on close is skipped by a request still waiting on the loader', async () => {
+  const old = { isConnected: true, cloneNode: () => ({ isConnected: false }), replaceWith(fresh) { old.isConnected = false; fresh.isConnected = true; } };
+  showAd(old, 'a');
+  const fresh = context.renewAdBox(old);
+  added[0].fire('load');
+  await tick();
+  assert.equal(old.isConnected, false);
+  assert.equal(fresh.isConnected, true);
+  assert.deepEqual(shown, []);
+});

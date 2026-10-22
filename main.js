@@ -32,6 +32,13 @@ function showAd(box, key) {
     () => {},
   );
 }
+
+/** Swaps `box` for an empty copy, so callbacks still waiting on the old one find it detached. */
+function renewAdBox(box) {
+  const fresh = box.cloneNode(false);
+  box.replaceWith(fresh);
+  return fresh;
+}
 // ads:end
 
 const initialPosition = '7N/8/8/3q4/8/8/8/8 w - - 0 1';
@@ -339,14 +346,17 @@ function announceTarget() {
 function showSolved() {
   document.getElementById('solvedText').textContent =
     `All ${targetCount} targets reached in ${moveCount} moves.`;
-  // The loader won't fill a box that already holds an ad, so each run gets a new one.
-  const old = document.getElementById('adBox');
-  const box = old.cloneNode(false);
-  old.replaceWith(box);
+  const box = document.getElementById('adBox');
   box.dataset.adSlot = AD_SLOT;
   document.getElementById('solvedPanel').showModal();
   showAd(box, `${moveCount}/${Math.round(stats.at(-1).time)}`);
 }
+
+// Closing the dialog (button or Escape) retires its box: the loader won't fill one that
+// already holds an ad, and a request still pending must not land in the hidden dialog.
+document.getElementById('solvedPanel').addEventListener('close', () => {
+  renewAdBox(document.getElementById('adBox'));
+});
 
 const config = {
   draggable: true,
