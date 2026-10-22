@@ -8,6 +8,8 @@ const source = readFileSync(`${__dirname}/../main.js`, 'utf8').match(/\/\/ ads:s
 let added;
 let shown;
 let online;
+let stored;
+let cookie;
 let context;
 
 const tick = () => new Promise((resolve) => setTimeout(resolve));
@@ -18,6 +20,8 @@ beforeEach(() => {
   added = [];
   shown = [];
   online = true;
+  stored = {};
+  cookie = '';
   // Record script tags instead of fetching them; a fresh context has no loader request.
   context = vm.createContext({
     Error,
@@ -28,7 +32,9 @@ beforeEach(() => {
         return { addEventListener: (name, fn) => (listeners[name] = fn), fire: (name) => listeners[name](), remove() {} };
       },
       head: { appendChild: (el) => added.push(el) },
+      get cookie() { return cookie; },
     },
+    localStorage: { getItem: (key) => stored[key] ?? null },
     navigator: { get onLine() { return online; } },
     window: { ihtfyAds: { show: (b, key) => shown.push([b, key]) } },
   });
@@ -81,4 +87,30 @@ test('a box swapped out on close is skipped by a request still waiting on the lo
   assert.equal(old.isConnected, false);
   assert.equal(fresh.isConnected, true);
   assert.deepEqual(shown, []);
+});
+
+test('loadForBuyer loads nothing for a visitor without an ad-free token', () => {
+  context.loadForBuyer();
+  assert.equal(added.length, 0);
+});
+
+test('loadForBuyer loads the loader at startup when localStorage holds a token', () => {
+  stored['ihtfy-ad-free'] = 'token';
+  context.loadForBuyer();
+  assert.equal(added.length, 1);
+  assert.equal(added[0].src, 'https://ihtfy.com/ads/v1.js');
+  showAd(box(), 'a');
+  assert.equal(added.length, 1);
+});
+
+test('loadForBuyer loads the loader at startup when only the cookie holds a token', () => {
+  cookie = 'a=b; ihtfy-ad-free=token';
+  context.loadForBuyer();
+  assert.equal(added.length, 1);
+});
+
+test('loadForBuyer does nothing when storage and cookies cannot be read', () => {
+  context.localStorage = { getItem: () => { throw new Error('blocked'); } };
+  context.loadForBuyer();
+  assert.equal(added.length, 0);
 });
