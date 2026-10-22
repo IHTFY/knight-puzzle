@@ -4,7 +4,9 @@
 // The ad in the solved dialog comes from the shared IHTFY loader, which
 // ihtfy.com serves for all the games (its source is in the IHTFY/com.ihtfy
 // repo). Nothing ad-related loads before the first finished run: the loader
-// arrives then, and AdSense after it at browser idle.
+// arrives then, and AdSense after it at browser idle. A visitor who may have
+// bought ad-free gets the loader at startup instead (loadForBuyer), so it can
+// hide the ad box before the solved dialog shows.
 const ADS_LOADER = 'https://ihtfy.com/ads/v1.js';
 
 // The shared 300×250 display unit for the games' result screens.
@@ -12,10 +14,8 @@ const AD_SLOT = '6470163205';
 
 let adLoader = null;
 
-/** Fills `box` with an ad for the game over named `key`; offline or on failure it stays empty. */
-function showAd(box, key) {
-  if (!navigator.onLine) return;
-  adLoader ??= new Promise((resolve, reject) => {
+const loadAds = () =>
+  (adLoader ??= new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.async = true;
     script.src = ADS_LOADER;
@@ -26,8 +26,28 @@ function showAd(box, key) {
       reject(new Error('The ad loader did not load'));
     });
     document.head.appendChild(script);
-  });
-  adLoader.then(
+  }));
+
+/** Loads the loader now if this browser holds an ad-free token; the loader checks it. */
+function loadForBuyer() {
+  let found = false;
+  try {
+    found = Boolean(localStorage.getItem('ihtfy-ad-free'));
+  } catch {
+    // Storage off: the cookie may still hold the token.
+  }
+  try {
+    found ||= /(?:^|;\s*)ihtfy-ad-free=/.test(document.cookie);
+  } catch {
+    // Cookies off too: there is no token to find.
+  }
+  if (found) loadAds().catch(() => {});
+}
+
+/** Fills `box` with an ad for the game over named `key`; offline or on failure it stays empty. */
+function showAd(box, key) {
+  if (!navigator.onLine) return;
+  loadAds().then(
     () => box.isConnected && window.ihtfyAds.show(box, key),
     () => {},
   );
@@ -40,6 +60,8 @@ function renewAdBox(box) {
   return fresh;
 }
 // ads:end
+
+loadForBuyer();
 
 const initialPosition = '7N/8/8/3q4/8/8/8/8 w - - 0 1';
 // Target order and best move counts are shared by gameplay and the stats table.
