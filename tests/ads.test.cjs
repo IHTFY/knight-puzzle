@@ -114,3 +114,10 @@ test('loadForBuyer does nothing when storage and cookies cannot be read', () => 
   context.loadForBuyer();
   assert.equal(added.length, 0);
 });
+
+test('loadForBuyer still finds the cookie when storage cannot be read', () => {
+  context.localStorage = { getItem: () => { throw new Error('blocked'); } };
+  cookie = 'ihtfy-ad-free=token';
+  context.loadForBuyer();
+  assert.equal(added.length, 1);
+});

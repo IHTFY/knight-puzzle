@@ -30,11 +30,18 @@ const loadAds = () =>
 
 /** Loads the loader now if this browser holds an ad-free token; the loader checks it. */
 function loadForBuyer() {
+  let found = false;
   try {
-    if (localStorage.getItem('ihtfy-ad-free') || /(?:^|;\s*)ihtfy-ad-free=/.test(document.cookie)) loadAds().catch(() => {});
+    found = Boolean(localStorage.getItem('ihtfy-ad-free'));
   } catch {
-    // Storage and cookies off: there is no token to find.
+    // Storage off: the cookie may still hold the token.
   }
+  try {
+    found ||= /(?:^|;\s*)ihtfy-ad-free=/.test(document.cookie);
+  } catch {
+    // Cookies off too: there is no token to find.
+  }
+  if (found) loadAds().catch(() => {});
 }
 
 /** Fills `box` with an ad for the game over named `key`; offline or on failure it stays empty. */
