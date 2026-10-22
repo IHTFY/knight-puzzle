@@ -60,7 +60,7 @@ for (const scope of ['https://example.com/', 'https://example.com/puzzle/']) {
     await w.lifecycle('activate');
     assert.equal(await w.request('./?source=installed', 'navigate'), 'cached:./index.html');
     assert.equal(await w.request('./index.html', 'navigate'), 'cached:./index.html');
-    for (const asset of ['main.js', 'jquery.min.js', 'chessboard.js', 'styles.css', 'manifest.json', 'favicon.ico', 'images/icon.svg', 'images/apple-touch-icon.png', 'images/icon-maskable-512.png', 'images/pieces/wN.svg', 'images/pieces/bQ.svg', 'images/pieces/wP.svg']) {
+    for (const asset of ['main.js', 'ads.js', 'jquery.min.js', 'chessboard.js', 'styles.css', 'manifest.json', 'favicon.ico', 'images/icon.svg', 'images/apple-touch-icon.png', 'images/icon-maskable-512.png', 'images/pieces/wN.svg', 'images/pieces/bQ.svg', 'images/pieces/wP.svg']) {
       assert.equal(await w.request(asset), `cached:./${asset}`);
     }
     assert.equal(await w.request('./manifest.json?v=2'), 'cached:./manifest.json');
@@ -69,6 +69,9 @@ for (const scope of ['https://example.com/', 'https://example.com/puzzle/']) {
     assert.equal(w.stores.has('unrelated-app'), true);
     assert.equal(w.claimed(), true);
     assert.equal(w.request('https://other.example/script.js'), undefined);
+    for (const ad of ['https://ihtfy.com/ads/v1.js', 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', 'https://fundingchoicesmessages.google.com/i/pub-1']) {
+      assert.equal(w.request(ad, 'no-cors'), undefined, `${ad} goes to the network`);
+    }
     assert.equal(w.request('./other-page', 'navigate'), undefined);
     assert.equal(w.request('./main.js', 'cors', 'POST'), undefined);
   });

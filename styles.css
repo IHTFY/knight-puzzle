@@ -1231,3 +1231,35 @@ td.split-cell.slow-split::before {
 .time-mark {
   background: #d69aa6;
 }
+
+.solved-dialog {
+  overflow: auto;
+}
+.solved-dialog p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+.ad {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding-top: 150px;
+}
+.ad p {
+  font-size: 11px;
+}
+.ad a {
+  font-size: 11px;
+  color: var(--muted);
+}
+.ad-box {
+  width: 300px;
+  height: 250px;
+  min-height: 250px;
+}
+@media (max-width: 360px) {
+  .solved-dialog {
+    padding: 16px;
+  }
+}

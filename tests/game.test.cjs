@@ -17,6 +17,9 @@ function game(globals = {}) {
         innerHTML: '',
         style: {},
         attributes: {},
+        dataset: {},
+        cloneNode: () => ({ ...elements.get(id), dataset: {} }),
+        replaceWith: (next) => elements.set(id, next),
         setAttribute(name, value) {
           this.attributes[name] = value;
         },
@@ -50,6 +53,7 @@ function game(globals = {}) {
       addEventListener() {},
     },
     window: { addEventListener() {} },
+    navigator: { onLine: false },
     matchMedia: () => ({ matches: false, addEventListener() {} }),
     requestAnimationFrame: () => 1,
     cancelAnimationFrame() {},
@@ -83,6 +87,7 @@ function game(globals = {}) {
     ...globals,
   });
   const run = (code) => vm.runInContext(code, context);
+  run(readFileSync(new URL('../ads.js', `file://${__filename}`), 'utf8'));
   run(readFileSync(new URL('../main.js', `file://${__filename}`), 'utf8'));
   return {
     run,
@@ -167,6 +172,8 @@ test('complete a tour, freeze final results, then reset and start again', () => 
     }
   }
   assert.equal(g.run('finished'), true);
+  assert.equal(g.element('solvedPanel').open, true);
+  assert.equal(g.element('adBox').dataset.adSlot, '6470163205');
   assert.equal(g.run('nextTarget'), null);
   assert.equal(g.run('targetCount'), 35);
   assert.equal(g.run('moveCount'), moves);

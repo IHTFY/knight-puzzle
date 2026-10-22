@@ -302,6 +302,18 @@ function announceTarget() {
       : 'Target hidden.';
 }
 
+function showSolved() {
+  document.getElementById('solvedText').textContent =
+    `All ${targetCount} targets reached in ${moveCount} moves.`;
+  // The loader won't fill a box that already holds an ad, so each run gets a new one.
+  const old = document.getElementById('adBox');
+  const box = old.cloneNode(false);
+  old.replaceWith(box);
+  box.dataset.adSlot = AD_SLOT;
+  document.getElementById('solvedPanel').showModal();
+  showAd(box, `${moveCount}/${Math.round(stats.at(-1).time)}`);
+}
+
 const config = {
   draggable: true,
   pieceTheme: 'images/pieces/{piece}.svg',
@@ -344,6 +356,7 @@ const config = {
     renderHighlights();
     updateTimer();
     announceTarget();
+    if (finished) showSolved();
   },
   onDragMove: startTimer,
   onSnapEnd: renderHighlights,
@@ -471,6 +484,10 @@ document.getElementById('knightVision').addEventListener('click', () => {
     .setAttribute('aria-pressed', String(showMoves));
   renderHighlights();
 });
+
+document
+  .getElementById('closeSolved')
+  .addEventListener('click', () => document.getElementById('solvedPanel').close());
 
 document.getElementById('statsButton').addEventListener('click', () => {
   updateStatsDisplay();
