@@ -87,7 +87,6 @@ function game(globals = {}) {
     ...globals,
   });
   const run = (code) => vm.runInContext(code, context);
-  run(readFileSync(new URL('../ads.js', `file://${__filename}`), 'utf8'));
   run(readFileSync(new URL('../main.js', `file://${__filename}`), 'utf8'));
   return {
     run,

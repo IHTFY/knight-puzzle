@@ -3,7 +3,8 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
 
-const source = readFileSync(`${__dirname}/../ads.js`, 'utf8');
+// The ad code lives in main.js between markers.
+const source = readFileSync(`${__dirname}/../main.js`, 'utf8').match(/\/\/ ads:start\n([\s\S]*?)\/\/ ads:end/)[1];
 let added;
 let shown;
 let online;
