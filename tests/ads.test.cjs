@@ -206,3 +206,41 @@ test('crossing into another ad size gets a new ad; resizing within one does not'
   assert.equal(shown.length, 2);
   assert.equal(shown[1][0].isConnected, false);
 });
+
+// The aside beside the board, after the app, holding a box.
+function rail() {
+  const app = { after(next) { app.next = next; } };
+  const aside = {
+    box: railBox(),
+    previousElementSibling: app,
+    app,
+    querySelector: () => aside.box,
+    remove() { aside.removed = true; },
+  };
+  return aside;
+}
+
+async function setUpForToken(valid) {
+  stored['ihtfy-ad-free'] = 'token';
+  context.window.ihtfyAds.adFree = async () => valid;
+  const aside = rail();
+  context.setUpPlayAd(aside);
+  assert.equal(aside.removed, true);
+  added[0].fire('load');
+  await tick();
+  fire('pointerdown');
+  await tick();
+  return aside;
+}
+
+test('a buyer gets no box beside the board', async () => {
+  const aside = await setUpForToken(true);
+  assert.equal(aside.app.next, undefined);
+  assert.deepEqual(shown, []);
+});
+
+test('the box beside the board comes back when the token is not valid', async () => {
+  const aside = await setUpForToken(false);
+  assert.equal(aside.app.next, aside);
+  assert.deepEqual(shownKeys(), [['160x600', 'play/1']]);
+});

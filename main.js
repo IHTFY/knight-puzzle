@@ -116,12 +116,32 @@ function startPlayAd(box) {
 function newPlayAd() {
   if (playBox && Date.now() - playRequestedAt >= PLAY_AD_MIN_MS) renewPlayAd();
 }
+
+/**
+ * Starts the ad beside the board. A visitor who may have bought ad-free starts
+ * without it, so a buyer's game keeps the whole window from the first frame; it
+ * comes back if the loader finds no valid token.
+ */
+function setUpPlayAd(rail) {
+  const box = rail.querySelector('.play-ad-box');
+  if (!mayBeAdFree()) return startPlayAd(box);
+  const before = rail.previousElementSibling;
+  rail.remove();
+  loadAds()
+    .then(() => window.ihtfyAds.adFree())
+    .then(
+      (free) => {
+        if (free) return;
+        before.after(rail);
+        startPlayAd(box);
+      },
+      () => {}, // The loader didn't arrive, so no ad could show either.
+    );
+}
 // ads:end
 
 loadForBuyer();
-// A buyer gets no box beside the board, so the game keeps the whole window.
-if (mayBeAdFree()) document.getElementById('playAd').remove();
-else startPlayAd(document.getElementById('playAdBox'));
+setUpPlayAd(document.getElementById('playAd'));
 
 const initialPosition = '7N/8/8/3q4/8/8/8/8 w - - 0 1';
 // Target order and best move counts are shared by gameplay and the stats table.
