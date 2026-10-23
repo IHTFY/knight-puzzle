@@ -169,7 +169,7 @@ test('the ad beside the board waits for the first tap or key press', async () =>
   await tick();
   assert.deepEqual(shownKeys(), [['160x600', 'play/1']]);
   assert.equal(shown[0][0], rail.next);
-  assert.equal(rail.next.dataset.adSlot, '6470163205');
+  assert.equal(rail.next.dataset.adSlot, '7239875855');
 });
 
 test('a window too small for the ad beside the board loads nothing', async () => {
