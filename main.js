@@ -1,16 +1,25 @@
 'use strict';
 
 // ads:start
-// The ad in the solved dialog comes from the shared IHTFY loader, which
-// ihtfy.com serves for all the games (its source is in the IHTFY/com.ihtfy
-// repo). Nothing ad-related loads before the first finished run: the loader
-// arrives then, and AdSense after it at browser idle. A visitor who may have
-// bought ad-free gets the loader at startup instead (loadForBuyer), so it can
+// The ads in the solved dialog and beside the board come from the shared IHTFY
+// loader, which ihtfy.com serves for all the games (its source is in the
+// IHTFY/com.ihtfy repo). Nothing ad-related loads before the player's first
+// tap or key press: the loader arrives then if the window is wide enough for
+// the ad beside the board, otherwise at the first finished run, and AdSense
+// after it at browser idle. A visitor who may have bought ad-free gets no box
+// beside the board and the loader at startup instead (loadForBuyer), so it can
 // hide the ad box before the solved dialog shows.
 const ADS_LOADER = 'https://ihtfy.com/ads/v1.js';
 
 // The shared 300×250 display unit for the games' result screens.
 const AD_SLOT = '6470163205';
+
+// The unit beside the board. It shares the results unit until a unit of its
+// own exists in AdSense.
+const PLAY_AD_SLOT = AD_SLOT;
+
+// A new run replaces the ad beside the board only once it has shown this long.
+const PLAY_AD_MIN_MS = 60 * 1000;
 
 let adLoader = null;
 
@@ -28,8 +37,8 @@ const loadAds = () =>
     document.head.appendChild(script);
   }));
 
-/** Loads the loader now if this browser holds an ad-free token; the loader checks it. */
-function loadForBuyer() {
+/** Whether this browser holds an ad-free token, unchecked; the loader checks it. */
+function mayBeAdFree() {
   let found = false;
   try {
     found = Boolean(localStorage.getItem('ihtfy-ad-free'));
@@ -41,7 +50,12 @@ function loadForBuyer() {
   } catch {
     // Cookies off too: there is no token to find.
   }
-  if (found) loadAds().catch(() => {});
+  return found;
+}
+
+/** Loads the loader now if this browser holds an ad-free token. */
+function loadForBuyer() {
+  if (mayBeAdFree()) loadAds().catch(() => {});
 }
 
 /** Fills `box` with an ad for the game over named `key`; offline or on failure it stays empty. */
@@ -59,9 +73,55 @@ function renewAdBox(box) {
   box.replaceWith(fresh);
   return fresh;
 }
+
+// The player's first tap or key press.
+const firstInput = new Promise((resolve) => {
+  for (const type of ['pointerdown', 'keydown'])
+    window.addEventListener(type, resolve, { once: true, capture: true });
+});
+
+let playBox = null;
+let playSize = '';
+let playKeys = 0;
+let playRequestedAt = -Infinity;
+
+// The box's size as the stylesheet sets it, such as "160x600"; empty where the ad doesn't fit.
+const sizeOf = (box) =>
+  box.offsetWidth ? `${box.offsetWidth}x${box.offsetHeight}` : '';
+
+// The loader won't fill a box twice, so each ad gets a new box. The old one
+// goes even when the new one is hidden, so no ad stays on the page out of view.
+function renewPlayAd() {
+  playBox = renewAdBox(playBox);
+  playSize = sizeOf(playBox);
+  if (!playSize) return;
+  playBox.dataset.adSize = playSize;
+  playRequestedAt = Date.now();
+  showAd(playBox, `play/${++playKeys}`);
+}
+
+/** Fills `box`, beside the board, after the first tap or key press, and again whenever the window crosses into another ad size. */
+function startPlayAd(box) {
+  box.dataset.adSlot = PLAY_AD_SLOT;
+  firstInput.then(() => {
+    playBox = box;
+    renewPlayAd();
+    window.addEventListener('resize', () => {
+      if (sizeOf(playBox) !== playSize) renewPlayAd();
+    });
+  });
+}
+
+/** A new run gets a new ad beside the board once the current one has shown for a minute. */
+function newPlayAd() {
+  if (playBox && Date.now() - playRequestedAt >= PLAY_AD_MIN_MS) renewPlayAd();
+}
 // ads:end
 
 loadForBuyer();
+// A buyer gets no box beside the board, so the game keeps the whole window.
+if (mayBeAdFree()) document.getElementById('playAd').remove();
+else startPlayAd(document.getElementById('playAdBox'));
 
 const initialPosition = '7N/8/8/3q4/8/8/8/8 w - - 0 1';
 // Target order and best move counts are shared by gameplay and the stats table.
@@ -490,6 +550,7 @@ document.getElementById('confirmReset').addEventListener('click', () => {
   updateStatsDisplay();
   announceTarget();
   applyPendingUpdate();
+  newPlayAd();
 });
 
 function updateTimer() {

@@ -1263,3 +1263,63 @@ td.split-cell.slow-split::before {
     padding: 16px;
   }
 }
+
+/* The ad beside the game. It shows only where it fits 150px from the nearest
+   control without the board getting smaller: the app column must stay at least
+   as wide as the board is tall at that height, so shorter windows qualify at
+   smaller widths. The dialogs stay 150px clear of it. */
+.play-ad {
+  display: none;
+}
+@media (min-width: 1626px) and (min-height: 700px),
+  (min-width: 1536px) and (min-height: 700px) and (max-height: 945px),
+  (min-width: 1440px) and (min-height: 700px) and (max-height: 849px),
+  (min-width: 1366px) and (min-height: 700px) and (max-height: 777px) {
+  body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .app {
+    width: 100%;
+  }
+  .play-ad {
+    display: grid;
+    grid-template-columns: min-content;
+    align-content: center;
+    gap: 4px;
+    /* The app's own padding counts toward the 150px, with 2px for rounding. */
+    margin-left: calc(152px - clamp(18px, 3vw, 42px));
+    padding-right: 16px;
+  }
+  .play-ad-box {
+    width: 160px;
+    height: 600px;
+  }
+  .dialog,
+  .dialog::backdrop {
+    right: 328px;
+  }
+}
+@media (min-width: 1766px) and (min-height: 700px) {
+  .play-ad-box {
+    width: 300px;
+  }
+  .dialog,
+  .dialog::backdrop {
+    right: 468px;
+  }
+}
+.play-ad-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  column-gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.play-ad-row p {
+  margin: 0;
+}
+.play-ad-row a {
+  color: var(--muted);
+}
