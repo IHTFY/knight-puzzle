@@ -118,20 +118,19 @@ function newPlayAd() {
 
 /**
  * Starts the ad beside the board. A visitor who may have bought ad-free starts
- * without it, so a buyer's game keeps the whole window from the first frame; it
+ * without it: the page's head script has already hidden the rail (the `ad-free`
+ * class), so a buyer's game keeps the whole window from the first frame. The rail
  * comes back if the loader finds no valid token.
  */
 function setUpPlayAd(rail) {
   const box = rail.querySelector('.play-ad-box');
   if (!mayBeAdFree()) return startPlayAd(box);
-  const before = rail.previousElementSibling;
-  rail.remove();
   loadAds()
     .then(() => window.ihtfyAds.adFree())
     .then(
       (free) => {
         if (free) return;
-        before.after(rail);
+        document.documentElement.classList.remove('ad-free');
         startPlayAd(box);
       },
       () => {}, // The loader didn't arrive, so no ad could show either.
