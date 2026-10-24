@@ -124,7 +124,10 @@ function newPlayAd() {
  */
 function setUpPlayAd(rail) {
   const box = rail.querySelector('.play-ad-box');
-  if (!mayBeAdFree()) return startPlayAd(box);
+  // The head script ran earlier; the token may have come or gone since.
+  const buyer = mayBeAdFree();
+  document.documentElement.classList.toggle('ad-free', buyer);
+  if (!buyer) return startPlayAd(box);
   loadAds()
     .then(() => window.ihtfyAds.adFree())
     .then(

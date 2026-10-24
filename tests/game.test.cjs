@@ -47,6 +47,7 @@ function game(globals = {}) {
   const context = vm.createContext({
     document: {
       getElementById: element,
+      documentElement: { classList: { toggle() {} } },
       querySelector: (selector) =>
         selector === '.help-dots' ? element('helpDots') : null,
       querySelectorAll: () => [],

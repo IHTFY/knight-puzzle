@@ -30,7 +30,10 @@ beforeEach(() => {
   railSize = [160, 600];
   now = 1_000_000;
   // The page's head script sets this class for a browser that may hold a token.
-  classes = Object.assign(new Set(['ad-free']), { remove(name) { this.delete(name); } });
+  classes = Object.assign(new Set(['ad-free']), {
+    remove(name) { this.delete(name); },
+    toggle(name, force) { if (force) this.add(name); else this.delete(name); },
+  });
   // Record script tags instead of fetching them; a fresh context has no loader request.
   context = vm.createContext({
     Error,
@@ -237,4 +240,12 @@ test('the box beside the board comes back when the token is not valid', async ()
   await setUpForToken(false);
   assert.equal(classes.has('ad-free'), false);
   assert.deepEqual(shownKeys(), [['160x600', 'play/1']]);
+});
+
+test('the head script\'s class follows the token as main.js finds it', () => {
+  context.setUpPlayAd(rail());
+  assert.equal(classes.has('ad-free'), false);
+  stored['ihtfy-ad-free'] = 'token';
+  context.setUpPlayAd(rail());
+  assert.equal(classes.has('ad-free'), true);
 });
