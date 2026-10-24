@@ -1,2 +1,4 @@
 # Local notes and reviews, never committed
 .local/
+node_modules/
+test-results/

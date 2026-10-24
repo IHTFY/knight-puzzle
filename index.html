@@ -25,6 +25,17 @@
     <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
     <link rel="icon" href="images/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+    <script>
+      // A browser that may hold an ad-free token never paints the ad rail, so the board doesn't move
+      // when the page script would otherwise take it away. mayBeAdFree in main.js runs the same test;
+      // the shared loader still decides, and main.js brings the rail back if the token isn't valid.
+      (() => {
+        let found = false;
+        try { found = Boolean(localStorage.getItem('ihtfy-ad-free')); } catch { /* storage off: the cookie may still hold it */ }
+        try { found ||= /(?:^|;\s*)ihtfy-ad-free=/.test(document.cookie); } catch { /* cookies off too */ }
+        if (found) document.documentElement.classList.add('ad-free');
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css" />
     <script src="jquery.min.js"></script>
     <script src="chessboard.js"></script>
