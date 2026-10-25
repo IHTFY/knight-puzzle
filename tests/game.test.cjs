@@ -7,6 +7,7 @@ function game(globals = {}) {
   const elements = new Map();
   const squareClasses = new Map();
   const intervals = new Set();
+  const timeouts = [];
   let now = 1000;
   let position;
   function element(id) {
@@ -20,6 +21,8 @@ function game(globals = {}) {
         dataset: {},
         cloneNode: () => ({ ...elements.get(id), dataset: {} }),
         replaceWith: (next) => elements.set(id, next),
+        removeAttribute() {},
+        focus() {},
         setAttribute(name, value) {
           this.attributes[name] = value;
         },
@@ -30,6 +33,7 @@ function game(globals = {}) {
           this.open = false;
         },
         classList: {
+          add: (name) => classes.add(name),
           remove: (name) => classes.delete(name),
           toggle: (name) =>
             classes.has(name) ? classes.delete(name) : classes.add(name),
@@ -47,7 +51,7 @@ function game(globals = {}) {
   const context = vm.createContext({
     document: {
       getElementById: element,
-      documentElement: { classList: { toggle() {} } },
+      documentElement: { classList: { toggle() {}, contains: () => false } },
       querySelector: (selector) =>
         selector === '.help-dots' ? element('helpDots') : null,
       querySelectorAll: () => [],
@@ -59,6 +63,10 @@ function game(globals = {}) {
     requestAnimationFrame: () => 1,
     cancelAnimationFrame() {},
     performance: { now: () => now },
+    setTimeout(fn) {
+      timeouts.push(fn);
+      return timeouts.length;
+    },
     setInterval(fn) {
       intervals.add(fn);
       return fn;
@@ -94,6 +102,8 @@ function game(globals = {}) {
     element,
     squareClasses,
     intervals,
+    // Runs the timers a move has scheduled.
+    flushTimeouts: () => timeouts.splice(0).forEach((fn) => fn()),
     advance: (ms) => (now += ms),
     position: () => position,
   };
@@ -172,8 +182,13 @@ test('complete a tour, freeze final results, then reset and start again', () => 
     }
   }
   assert.equal(g.run('finished'), true);
-  assert.equal(g.element('solvedPanel').open, true);
-  assert.equal(g.element('adBox').dataset.adSlot, '6470163205');
+  // The results come a beat after the last move, as a screen of their own, not a dialog.
+  assert.notEqual(g.element('solvedPanel').hidden, false);
+  g.flushTimeouts();
+  assert.equal(g.element('solvedPanel').hidden, false);
+  assert.equal(g.element('layout').hidden, true);
+  assert.equal(g.element('solvedPanel').open, undefined);
+  assert.equal(g.element('.ad-box').dataset.adSlot, '6470163205');
   assert.equal(g.run('nextTarget'), null);
   assert.equal(g.run('targetCount'), 35);
   assert.equal(g.run('moveCount'), moves);
@@ -198,6 +213,67 @@ test('complete a tour, freeze final results, then reset and start again', () => 
   assert.equal(g.position(), g.run('initialPosition'));
   g.run("config.onDrop('h8', 'g6')");
   assert.equal(g.intervals.size, 1);
+});
+
+function finishTour(g) {
+  g.run('config.onDragMove()');
+  let source = safe[0];
+  for (const target of safe.slice(1)) {
+    for (const destination of path(source, target)) {
+      g.advance(1100);
+      g.run(`config.onDrop('${source}', '${destination}')`);
+      source = destination;
+    }
+  }
+  g.flushTimeouts();
+}
+
+test('the results screen replaces the board; Back to board and Play again bring it back', () => {
+  const g = game();
+  assert.equal(g.element('layout').hidden, undefined);
+  finishTour(g);
+  assert.equal(g.element('layout').hidden, true);
+  assert.equal(g.element('solvedPanel').hidden, false);
+  assert.equal(g.element('app').classList.contains('on-results'), true);
+  g.element('closeSolved').click();
+  assert.equal(g.element('layout').hidden, false);
+  assert.equal(g.element('solvedPanel').hidden, true);
+  assert.equal(g.element('app').classList.contains('on-results'), false);
+  assert.equal(g.run('finished'), true);
+});
+
+test('Play again leaves the results and starts a fresh run', () => {
+  const g = game();
+  finishTour(g);
+  g.element('playAgain').click();
+  assert.equal(g.element('solvedPanel').hidden, true);
+  assert.equal(g.element('layout').hidden, false);
+  assert.equal(g.run('finished'), false);
+  assert.equal(g.run('moveCount + targetCount'), 0);
+});
+
+test('resetting from the results screen brings the board back', () => {
+  const g = game();
+  finishTour(g);
+  g.element('confirmReset').click();
+  assert.equal(g.element('solvedPanel').hidden, true);
+  assert.equal(g.element('layout').hidden, false);
+  assert.equal(g.element('app').classList.contains('on-results'), false);
+});
+
+test('a reset during the pause after the last move keeps the results away', () => {
+  const g = game();
+  g.run('config.onDragMove()');
+  let source = safe[0];
+  for (const target of safe.slice(1))
+    for (const destination of path(source, target)) {
+      g.advance(1100);
+      g.run(`config.onDrop('${source}', '${destination}')`);
+      source = destination;
+    }
+  g.element('confirmReset').click();
+  g.flushTimeouts();
+  assert.notEqual(g.element('solvedPanel').hidden, false);
 });
 
 test('target, queen, and knight hints remain independent and persist after reset', () => {
