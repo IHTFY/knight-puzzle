@@ -364,3 +364,40 @@ test('each results visit gets a new box, and leaving empties the last one', () =
   assert.equal(first.next.dataset.adSize, '300x250');
   assert.equal(first.next.isConnected, true);
 });
+
+test('a results screen that opened while a stored token was unchecked gets its ad once the token proves invalid', async () => {
+  stored['ihtfy-ad-free'] = 'token';
+  context.window.ihtfyAds.adFree = async () => false;
+  context.setUpPlayAd(rail());
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  assert.equal(results.box.next, undefined);
+  added[0].fire('load');
+  await tick();
+  assert.equal(classes.has('ad-free'), false);
+  assert.equal(shown.some(([b, key]) => key === 'k' && b === results.box.next), true);
+});
+
+test('a results screen that opened while a stored token was unchecked stays empty for a valid buyer', async () => {
+  stored['ihtfy-ad-free'] = 'token';
+  context.window.ihtfyAds.adFree = async () => true;
+  context.setUpPlayAd(rail());
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  added[0].fire('load');
+  await tick();
+  assert.deepEqual(shown, []);
+  assert.equal(results.box.next, undefined);
+});
+
+test('a results screen that was left is not given its ad when the token check ends late', async () => {
+  stored['ihtfy-ad-free'] = 'token';
+  context.window.ihtfyAds.adFree = async () => false;
+  context.setUpPlayAd(rail());
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  context.clearScreenAd(results);
+  added[0].fire('load');
+  await tick();
+  assert.equal(shown.some(([, key]) => key === 'k'), false);
+});

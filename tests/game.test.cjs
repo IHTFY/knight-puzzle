@@ -252,6 +252,15 @@ test('Play again leaves the results and starts a fresh run', () => {
   assert.equal(g.run('moveCount + targetCount'), 0);
 });
 
+test('resetting from the results screen brings the board back', () => {
+  const g = game();
+  finishTour(g);
+  g.element('confirmReset').click();
+  assert.equal(g.element('solvedPanel').hidden, true);
+  assert.equal(g.element('layout').hidden, false);
+  assert.equal(g.element('app').classList.contains('on-results'), false);
+});
+
 test('a reset during the pause after the last move keeps the results away', () => {
   const g = game();
   g.run('config.onDragMove()');

@@ -83,6 +83,9 @@ function renewAdBox(box) {
 // The screen that carries an ad on a phone.
 const AD_SCREEN = 'results';
 
+// The results screen that opened before the loader had checked a stored ad-free token.
+let waitingScreen = null;
+
 /**
  * Puts a new box on the screen named `name` (whose element is `screen`, already
  * showing, so the stylesheet has sized the box) and fills it for the game over
@@ -90,7 +93,10 @@ const AD_SCREEN = 'results';
  * bought ad-free.
  */
 function showScreenAd(name, screen, key) {
-  if (name !== AD_SCREEN || document.documentElement.classList.contains('ad-free')) return;
+  if (name !== AD_SCREEN) return;
+  // The head script's class stands for a stored token the loader hasn't checked yet.
+  waitingScreen = document.documentElement.classList.contains('ad-free') ? { name, screen, key } : null;
+  if (waitingScreen) return;
   const box = renewAdBox(screen.querySelector('.ad-box'));
   box.removeAttribute('style'); // The last ad's size, kept for its own screen visit.
   box.dataset.adSlot = AD_SLOT;
@@ -105,6 +111,7 @@ function showScreenAd(name, screen, key) {
 
 /** Swaps the box on a screen that is going away for an empty one, so no ad stays on the page out of view. */
 function clearScreenAd(screen) {
+  waitingScreen = null;
   renewAdBox(screen.querySelector('.ad-box'));
 }
 
@@ -176,6 +183,8 @@ function setUpPlayAd(rail) {
         if (free) return;
         document.documentElement.classList.remove('ad-free');
         startPlayAd(box);
+        // The token wasn't valid: a results screen already showing gets its ad now.
+        if (waitingScreen) showScreenAd(waitingScreen.name, waitingScreen.screen, waitingScreen.key);
       },
       () => {}, // The loader didn't arrive, so no ad could show either.
     );
@@ -492,6 +501,8 @@ function announceTarget() {
 const results = document.getElementById('solvedPanel');
 
 function showSolved() {
+  // A dialog left open would sit over the ad.
+  document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
   document.getElementById('solvedText').textContent =
     `All ${targetCount} targets reached in ${moveCount} moves.`;
   document.getElementById('layout').hidden = true;
@@ -623,6 +634,7 @@ function resetRun() {
   announceTarget();
   applyPendingUpdate();
   newPlayAd();
+  closeSolved();
 }
 
 document.getElementById('confirmReset').addEventListener('click', () => {
@@ -692,7 +704,6 @@ document.getElementById('knightVision').addEventListener('click', () => {
 document.getElementById('closeSolved').addEventListener('click', closeSolved);
 document.getElementById('playAgain').addEventListener('click', () => {
   resetRun();
-  closeSolved();
 });
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeSolved();
