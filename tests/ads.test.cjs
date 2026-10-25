@@ -31,6 +31,7 @@ beforeEach(() => {
   now = 1_000_000;
   // The page's head script sets this class for a browser that may hold a token.
   classes = Object.assign(new Set(['ad-free']), {
+    contains(name) { return this.has(name); },
     remove(name) { this.delete(name); },
     toggle(name, force) { if (force) this.add(name); else this.delete(name); },
   });
@@ -144,6 +145,8 @@ function railBox() {
   const rail = {
     isConnected: true,
     dataset: {},
+    style: {},
+    removeAttribute(name) { if (name === 'style') rail.style = {}; },
     get offsetWidth() { return railSize[0]; },
     get offsetHeight() { return railSize[1]; },
     cloneNode: () => Object.assign(railBox(), { dataset: { ...rail.dataset } }),
@@ -248,4 +251,116 @@ test('the head script\'s class follows the token as main.js finds it', () => {
   stored['ihtfy-ad-free'] = 'token';
   context.setUpPlayAd(rail());
   assert.equal(classes.has('ad-free'), true);
+});
+
+test('the minute for the ad beside the board starts when it is placed, not when the loader is asked', async () => {
+  context.startPlayAd(railBox());
+  fire('pointerdown');
+  await tick();
+  // A slow connection: the loader arrives a minute and a half after the request.
+  now += 90_000;
+  added[0].fire('load');
+  await tick();
+  assert.deepEqual(shownKeys(), [['160x600', 'play/1']]);
+  now += 30_000;
+  context.newPlayAd();
+  await tick();
+  assert.equal(shown.length, 1);
+  now += 30_000;
+  context.newPlayAd();
+  await tick();
+  assert.deepEqual(shownKeys(), [['160x600', 'play/1'], ['160x600', 'play/2']]);
+});
+
+test('a new run keeps waiting while the ad beside the board is still being placed', async () => {
+  context.startPlayAd(railBox());
+  fire('pointerdown');
+  await tick();
+  now += 120_000;
+  context.newPlayAd();
+  await tick();
+  added[0].fire('load');
+  await tick();
+  assert.deepEqual(shownKeys(), [['160x600', 'play/1']]);
+});
+
+test('a failed request lets the next run try the ad beside the board again', async () => {
+  context.startPlayAd(railBox());
+  fire('pointerdown');
+  await tick();
+  added[0].fire('error');
+  await tick();
+  assert.deepEqual(shown, []);
+  context.newPlayAd();
+  await tick();
+  assert.equal(added.length, 2);
+  added[1].fire('load');
+  await tick();
+  assert.deepEqual(shownKeys(), [['160x600', 'play/2']]);
+});
+
+// The results screen: a section holding the box the stylesheet sizes for the window.
+function screen(size = [300, 250]) {
+  railSize = size;
+  const aside = { box: railBox(), querySelector: () => aside.box };
+  return aside;
+}
+const adFreeGone = () => classes.delete('ad-free');
+
+test('only the results screen gets an ad box', async () => {
+  adFreeGone();
+  for (const name of ['play', 'stats', 'howTo', 'home']) {
+    context.showScreenAd(name, screen(), 'k');
+  }
+  assert.equal(added.length, 0);
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  added[0].fire('load');
+  await tick();
+  assert.equal(shown.length, 1);
+  assert.equal(shown[0][0], results.box.next);
+});
+
+test('the play screen never gets a box, even where one would fit', async () => {
+  adFreeGone();
+  const play = screen([300, 250]);
+  context.showScreenAd('play', play, 'k');
+  assert.equal(added.length, 0);
+  assert.equal(play.box.next, undefined);
+});
+
+test('a visitor who may have bought ad-free gets no results box and no request', async () => {
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  assert.equal(added.length, 0);
+  assert.equal(results.box.next, undefined);
+  assert.deepEqual(shown, []);
+});
+
+test('the results box is passed the shared unit and the size the stylesheet gave it', async () => {
+  adFreeGone();
+  const results = screen([320, 100]);
+  context.showScreenAd('results', results, 'k');
+  const fresh = results.box.next;
+  assert.equal(fresh.dataset.adSlot, '6470163205');
+  assert.equal(fresh.dataset.adSize, '320x100');
+  assert.deepEqual({ ...fresh.style }, { width: '320px', height: '100px', minHeight: '100px' });
+});
+
+test('a window too small for a results box requests nothing', () => {
+  adFreeGone();
+  context.showScreenAd('results', screen([0, 0]), 'k');
+  assert.equal(added.length, 0);
+});
+
+test('each results visit gets a new box, and leaving empties the last one', () => {
+  adFreeGone();
+  const results = screen();
+  context.showScreenAd('results', results, 'a');
+  const first = results.box.next;
+  results.box = first;
+  context.clearScreenAd(results);
+  assert.equal(first.isConnected, false);
+  assert.equal(first.next.dataset.adSize, '300x250');
+  assert.equal(first.next.isConnected, true);
 });

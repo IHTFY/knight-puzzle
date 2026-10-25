@@ -1232,10 +1232,27 @@ td.split-cell.slow-split::before {
   background: #d69aa6;
 }
 
-.solved-dialog {
-  overflow: auto;
+/* The results screen replaces the board and its controls. The ad box and the
+   space around it are one unit: a visitor who may have bought ad-free gets
+   neither, and the box never has a button or link within 50px. */
+.layout[hidden],
+.results[hidden] {
+  display: none;
 }
-.solved-dialog p {
+.results {
+  display: grid;
+  align-content: safe center;
+  justify-items: center;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+  text-align: center;
+}
+.results h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.results p {
   margin: 0;
   font-size: 15px;
   color: var(--muted);
@@ -1244,24 +1261,54 @@ td.split-cell.slow-split::before {
   display: grid;
   justify-items: center;
   gap: 6px;
-  padding-top: 150px;
+  margin-block: 6px;
 }
-.ad p {
+.results .ad p {
   font-size: 11px;
 }
 .ad a {
   font-size: 11px;
   color: var(--muted);
 }
+/* 52px below the box, counting the grid gap, to the Privacy link and, past it, the buttons. */
 .ad-box {
   width: 300px;
   height: 250px;
   min-height: 250px;
+  margin-bottom: 46px;
 }
-@media (max-width: 360px) {
-  .solved-dialog {
-    padding: 16px;
+/* Shorter windows get the next smaller size the loader offers, so the result,
+   the box and the buttons stay in view without scrolling. */
+@media (max-height: 575px) {
+  .ad-box {
+    width: 320px;
+    height: 100px;
+    min-height: 100px;
   }
+}
+@media (max-height: 424px) {
+  .ad-box {
+    height: 50px;
+    min-height: 50px;
+  }
+}
+/* A 320px box is as wide as the narrowest windows; let it use the app's padding. */
+@media (max-width: 339px) {
+  .results {
+    margin-inline: -10px;
+  }
+}
+:root.ad-free .ad {
+  display: none;
+}
+.results-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  width: min(100%, 360px);
+}
+.app.on-results .header-tools {
+  visibility: hidden;
 }
 
 /* The ad beside the game. It shows only where it fits 150px from the nearest

@@ -42,7 +42,7 @@
     <script defer src="main.js"></script>
   </head>
   <body>
-    <div class="app">
+    <div class="app" id="app">
       <header>
         <div class="brand">
           <img src="images/icon.svg" alt="" />
@@ -93,7 +93,7 @@
           </button>
         </div>
       </header>
-      <main class="layout">
+      <main class="layout" id="layout">
         <section class="stage" aria-label="Game board">
           <div class="board-wrap">
             <div id="boardContainer">
@@ -288,12 +288,27 @@
           </div>
         </section>
       </main>
+      <!-- The results are a screen of their own, not a dialog: the ad box never sits in a pop-up or under a backdrop. -->
+      <section class="results" id="solvedPanel" aria-labelledby="solvedTitle" hidden>
+        <h2 id="solvedTitle">Tour complete</h2>
+        <p id="solvedText"></p>
+        <!-- At least 50px of space around the box; it keeps its size whether or not an ad fills it. -->
+        <aside class="ad">
+          <p>Advertisements</p>
+          <div class="ad-box" id="adBox"></div>
+          <a href="https://ihtfy.com/privacy/" target="_blank" rel="noopener">Privacy</a>
+        </aside>
+        <div class="results-actions">
+          <button class="action primary" id="playAgain">Play again</button
+          ><button class="action" id="closeSolved">Back to board</button>
+        </div>
+      </section>
     </div>
     <!-- Beside the game on wide screens only, 150px from its controls (styles.css). -->
     <aside class="play-ad" id="playAd">
       <div class="play-ad-row">
         <p>Advertisements</p>
-        <a href="https://ihtfy.com/privacy" target="_blank" rel="noopener">Privacy</a>
+        <a href="https://ihtfy.com/privacy/" target="_blank" rel="noopener">Privacy</a>
       </div>
       <div class="play-ad-box" id="playAdBox"></div>
     </aside>
@@ -1080,25 +1095,11 @@
         </div>
         <a class="help-support" href="https://ihtfy.com/support/" target="_blank" rel="noopener"
           >Support ♥</a
-        ><a class="help-support" href="https://ihtfy.com/privacy" target="_blank" rel="noopener"
+        ><a class="help-support" href="https://ihtfy.com/privacy/" target="_blank" rel="noopener"
           >Privacy</a
         >
       </div>
       <span class="sr-only" id="helpAnnouncement" aria-live="polite"></span>
-    </dialog>
-
-    <dialog class="dialog solved-dialog" id="solvedPanel" aria-labelledby="solvedTitle">
-      <div class="dialog-head">
-        <h2 id="solvedTitle">Tour complete</h2>
-        <button class="close" id="closeSolved" aria-label="Close">✕</button>
-      </div>
-      <p id="solvedText"></p>
-      <!-- At least 150px below the close button; the box keeps its size whether or not an ad fills it. -->
-      <aside class="ad">
-        <p>Advertisements</p>
-        <div class="ad-box" id="adBox"></div>
-        <a href="https://ihtfy.com/privacy" target="_blank" rel="noopener">Privacy</a>
-      </aside>
     </dialog>
 
     <dialog
