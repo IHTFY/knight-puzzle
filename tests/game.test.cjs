@@ -583,3 +583,52 @@ test('a waiting update is activated straight away when idle', async () => {
   await new Promise(setImmediate);
   assert.deepEqual(posted, ['skipWaiting']);
 });
+
+test('a later update reloads an idle page that first installed without a controller', async () => {
+  const listeners = {};
+  const posted = [];
+  let reloads = 0;
+  const registration = {
+    waiting: null,
+    addEventListener(event, handler) {
+      listeners[event] = handler;
+    },
+    update: async () => {},
+  };
+  const serviceWorker = {
+    controller: null,
+    addEventListener(event, handler) {
+      listeners[event] = handler;
+    },
+    register: async () => registration,
+  };
+  const g = game({
+    navigator: { serviceWorker },
+    location: { reload: () => reloads++ },
+  });
+  await new Promise(setImmediate);
+
+  // The initial install claims this previously uncontrolled first-visit page.
+  serviceWorker.controller = { version: 'first' };
+  listeners.controllerchange();
+  assert.equal(reloads, 0, 'first install must not reload');
+
+  // A later release installs while that same page is still open and idle.
+  const installing = {
+    state: 'installing',
+    addEventListener(event, handler) {
+      this.onchange = handler;
+    },
+  };
+  registration.installing = installing;
+  listeners.updatefound();
+  registration.waiting = { postMessage: (message) => posted.push(message) };
+  installing.state = 'installed';
+  installing.onchange();
+  assert.deepEqual(posted, ['skipWaiting'], 'the page activates the later update');
+  serviceWorker.controller = { version: 'second' };
+  registration.waiting = null;
+  listeners.controllerchange();
+  assert.equal(g.run('t_start'), null, 'no run blocks the reload');
+  assert.equal(reloads, 1, 'later activation must load the new app code');
+});

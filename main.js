@@ -1239,10 +1239,13 @@ function applyPendingUpdate() {
   }
 }
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-  const hadController = Boolean(navigator.serviceWorker.controller);
+  let hadController = Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     // The first install takes control without a reload; later ones swap in the new version.
-    if (!hadController) return;
+    if (!hadController) {
+      hadController = true;
+      return;
+    }
     controllerChanged = true;
     applyPendingUpdate();
   });
