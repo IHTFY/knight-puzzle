@@ -178,6 +178,20 @@ test('the copy still goes if the exit fails to start', async ({ page }) => {
   expect(await launching(page)).toBe(false);
 });
 
+test('a late start still gets the whole flight', async ({ page }) => {
+  await installedApp(page);
+  // The game becomes ready 3.5 s after the launch starts.
+  await page.route('**/main.js', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 3500));
+    await route.continue();
+  });
+  await page.goto('/');
+  await page.waitForFunction(() => window.started.length > 0);
+  await page.waitForTimeout(800);
+  await expect(page.locator('#launch')).toHaveCount(1);
+  await expect(page.locator('#launch')).toHaveCount(0, { timeout: 2000 });
+});
+
 test('a stalled exit still ends, and leaves the logo showing', async ({ page }) => {
   await installedApp(page, { hold: 'start' });
   await page.goto('/');

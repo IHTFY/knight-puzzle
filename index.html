@@ -104,13 +104,16 @@
         skippers.forEach((type) => addEventListener(type, skip, true));
         // The game never stays hidden behind the copy, even if it fails to call launchExit or the
         // exit fails to start.
-        const fallback = setTimeout(end, 4000);
+        let fallback = setTimeout(end, 4000);
         // play(overlay) starts the game's exit and returns its Web Animations.
         window.launchExit = (play) => {
           // Too late: the fallback already ended the launch, perhaps before the copy was parsed.
           if (ended) return document.getElementById('launch')?.remove();
           const overlay = document.getElementById('launch');
           if (skipped) return end();
+          // The exit gets its full run however late it starts, with a stall still caught.
+          clearTimeout(fallback);
+          fallback = setTimeout(end, 2000);
           animations = [];
           try {
             if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
