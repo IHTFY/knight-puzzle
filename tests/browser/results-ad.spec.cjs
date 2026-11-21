@@ -213,6 +213,7 @@ test('an ad still loading when the phone turns goes to a box sized for the turne
   await page.keyboard.press('Shift');
   await finishTour(page);
   await page.setViewportSize({ width: 750, height: 390 });
+  await expect(page.locator('#adBox')).toHaveAttribute('data-ad-size', '320x50');
   await expect(page.locator('.ad')).toBeVisible();
   release();
   await expect(page.locator('#adBox ins')).toBeVisible();
