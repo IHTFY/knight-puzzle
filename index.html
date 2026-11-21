@@ -36,12 +36,127 @@
         if (found) document.documentElement.classList.add('ad-free');
       })();
     </script>
+    <style>
+      /* Installed-app launch: the first paint copies Chrome's launch screen (manifest background,
+         maskable icon at 128px, name near the bottom), then launchExit() animates out of it. */
+      #launch {
+        display: none;
+      }
+      .launching #launch {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: grid;
+        place-items: center;
+        background: #070f20;
+      }
+      #launch-icon {
+        width: 128px;
+        height: 128px;
+        background: #14182a;
+      }
+      #launch-name {
+        position: absolute;
+        inset: auto 0 56px;
+        font: 24px/1 Roboto, system-ui, sans-serif;
+        text-align: center;
+        color: #fff;
+      }
+      /* Too short for the name below the helmet. */
+      @media (max-height: 300px) {
+        #launch-name {
+          display: none;
+        }
+      }
+    </style>
+    <script>
+      // Plays once per fresh launch of the installed app: never in a browser tab, on reload, or on return.
+      (() => {
+        const root = document.documentElement;
+        try {
+          const nav = performance.getEntriesByType('navigation')[0];
+          const app = matchMedia('(display-mode: standalone)').matches;
+          if (!app || nav?.type !== 'navigate' || sessionStorage.getItem('launched')) return;
+          sessionStorage.setItem('launched', '1');
+        } catch {
+          return;
+        }
+        root.classList.add('launching');
+        let animations;
+        let skipped = false;
+        let ended = false;
+        // A tap or key skips to the end.
+        // Before the exit starts, the copy goes as soon as the game is ready.
+        const skip = () => {
+          skipped = true;
+          animations?.forEach((a) => a.finish());
+        };
+        const skippers = ['pointerdown', 'keydown'];
+        const end = () => {
+          ended = true;
+          clearTimeout(fallback);
+          // Drops the fills too, so nothing in the game stays hidden if the fallback cuts the exit short.
+          animations?.forEach((a) => a.cancel());
+          skippers.forEach((type) => removeEventListener(type, skip, true));
+          root.classList.remove('launching');
+          document.getElementById('launch')?.remove();
+        };
+        skippers.forEach((type) => addEventListener(type, skip, true));
+        // The game never stays hidden behind the copy, even if it fails to call launchExit or the
+        // exit fails to start.
+        let fallback = setTimeout(end, 4000);
+        // play(overlay) starts the game's exit and returns its Web Animations.
+        window.launchExit = (play) => {
+          // Too late: the fallback already ended the launch, perhaps before the copy was parsed.
+          if (ended) return document.getElementById('launch')?.remove();
+          const overlay = document.getElementById('launch');
+          if (skipped) return end();
+          // The exit gets its full run however late it starts, with a stall still caught.
+          clearTimeout(fallback);
+          fallback = setTimeout(end, 2000);
+          animations = [];
+          try {
+            if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+              try {
+                animations = play(overlay);
+              } catch {
+                animations = [];
+              }
+            }
+            if (!animations.length) {
+              animations = [overlay.animate({ opacity: [1, 0] }, { duration: 200, easing: 'ease-out', fill: 'forwards' })];
+            }
+          } catch {
+            return end();
+          }
+          Promise.all(animations.map((a) => a.finished)).then(end, end);
+        };
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css" />
-    <script src="jquery.min.js"></script>
-    <script src="chessboard.js"></script>
+    <script defer src="jquery.min.js"></script>
+    <script defer src="chessboard.js"></script>
     <script defer src="main.js"></script>
   </head>
   <body>
+    <div id="launch" aria-hidden="true">
+      <!-- The helmet from images/icon.svg, inline so it needs no request. -->
+      <svg id="launch-icon" viewBox="0 0 512 512">
+        <g transform="translate(0 10)">
+          <clipPath id="launch-visor"><path d="M150 108Q256 62 362 108L370 300Q370 382 302 414Q256 430 210 414Q142 382 142 300Z"/></clipPath>
+          <g clip-path="url(#launch-visor)">
+            <path d="M120 40H256V196H120Z" fill="#d9e0e8"/><path d="M256 40H400V196H256Z" fill="#aab4c1"/>
+            <path d="M120 236H256V440H120Z" fill="#c6ced8"/><path d="M256 236H400V440H256Z" fill="#8995a5"/>
+            <path d="M120 236 256 236 256 440 120 300Z" fill="#d2d9e2"/><path d="M400 236 256 236 256 440 400 300Z" fill="#97a2b1"/>
+            <path d="M120 196H256V236H120Z" fill="#f2cf6b"/><path d="M256 196H400V236H256Z" fill="#c99a2e"/>
+          </g>
+          <path d="M236 104 256 84 256 418 236 412Z" fill="#f2cf6b"/><path d="M256 84 276 104 276 412 256 418Z" fill="#b8892a"/>
+          <g fill="#0b0d16"><path d="M166 208H228L224 224H170Z"/><path d="M284 208H346L342 224H288Z"/>
+            <path d="M178 270h12l-2 44h-8zM204 276h12l-2 50h-8zM322 270h12l-2 44h-8zM296 276h12l-2 50h-8z"/></g>
+        </g>
+      </svg>
+      <span id="launch-name">Knight Around the Queen</span>
+    </div>
     <div class="app" id="app">
       <header>
         <div class="brand">
