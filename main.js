@@ -767,9 +767,14 @@ statsPanel.addEventListener('click', (event) => {
     statsPanel.close();
 });
 
+// Resizing replaces the squares, so the focused one is focused again afterward.
 function resizeBoard() {
+  const focused = boardElement.contains(document.activeElement)
+    ? document.activeElement.closest('[data-square]')?.dataset.square
+    : undefined;
   board.resize();
   renderHighlights();
+  if (focused) boardElement.querySelector(`[data-square="${focused}"]`).focus();
 }
 $(window).resize(resizeBoard);
 if (typeof ResizeObserver !== 'undefined') {
