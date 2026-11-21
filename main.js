@@ -86,6 +86,10 @@ const AD_SCREEN = 'results';
 // The results screen that opened before the loader had checked a stored ad-free token.
 let waitingScreen = null;
 
+// The results ad on screen: its section, box and key, whether the loader has been
+// asked to fill this box, and how many boxes were swapped out before their ad arrived.
+let screenAd = null;
+
 /**
  * Puts a new box on the screen named `name` (whose element is `screen`, already
  * showing, so the stylesheet has sized the box) and fills it for the game over
@@ -98,20 +102,55 @@ function showScreenAd(name, screen, key) {
   waitingScreen = document.documentElement.classList.contains('ad-free') ? { name, screen, key } : null;
   if (waitingScreen) return;
   const box = renewAdBox(screen.querySelector('.ad-box'));
-  box.removeAttribute('style'); // The last ad's size, kept for its own screen visit.
   box.dataset.adSlot = AD_SLOT;
-  const size = sizeOf(box);
-  if (!size) return;
-  box.dataset.adSize = size;
-  // The loader's unit keeps this size, so the box does too if the window turns before the screen closes.
-  const [width, height] = size.split('x');
-  Object.assign(box.style, { width: `${width}px`, height: `${height}px`, minHeight: `${height}px` });
-  showAd(box, key);
+  screenAd = { screen, box, key, asked: false, swaps: 0 };
+  fitScreenAd();
 }
+
+/**
+ * Leaves the results ad, its label and its link out while the window can't hold
+ * them with the result and its buttons, as on a phone turned on its side, and
+ * brings them back once it can. The ad is asked for when its box first shows,
+ * and a placed ad stays in its box, so none is asked for twice. The loader
+ * places an ad in any box still on the page, shown or not, so a box left out
+ * before its ad arrived is swapped for an empty one, which is asked for as soon
+ * as the unit this window gives it fits.
+ */
+function fitScreenAd() {
+  if (!screenAd) return;
+  const { screen, box } = screenAd;
+  const ad = box.parentElement;
+  ad.hidden = false;
+  // Until the loader has the box, it takes the size the stylesheet gives this
+  // window. The loader's unit keeps its size after that, so the box does too.
+  if (!screenAd.asked) {
+    box.removeAttribute('style');
+    box.dataset.adSize = sizeOf(box);
+    const [width, height] = box.dataset.adSize.split('x');
+    if (height) Object.assign(box.style, { width: `${width}px`, height: `${height}px`, minHeight: `${height}px` });
+  }
+  ad.hidden =
+    !box.offsetWidth ||
+    screen.scrollHeight > screen.clientHeight ||
+    screen.scrollWidth > screen.clientWidth;
+  if (!ad.hidden && !screenAd.asked) {
+    screenAd.asked = true;
+    const { key, swaps } = screenAd;
+    // The loader keeps a key it is still placing, so a swapped box gets a key of its own.
+    showAd(box, swaps ? `${key}/${swaps}` : key);
+  } else if (ad.hidden && screenAd.asked && !screenAd.box.querySelector('ins')) {
+    screenAd.box = renewAdBox(screenAd.box);
+    screenAd.asked = false;
+    screenAd.swaps++;
+    fitScreenAd(); // The new box may fit at the size this window gives it.
+  }
+}
+window.addEventListener('resize', fitScreenAd);
 
 /** Swaps the box on a screen that is going away for an empty one, so no ad stays on the page out of view. */
 function clearScreenAd(screen) {
   waitingScreen = null;
+  screenAd = null;
   renewAdBox(screen.querySelector('.ad-box'));
 }
 

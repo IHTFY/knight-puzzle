@@ -170,13 +170,119 @@ test('a buyer gets no results box, no reserved space and no request', async ({ p
   expect(again.bottom).toBeLessThanOrEqual(750);
 });
 
-test('turning the phone does not resize the box once the ad is placed', async ({ page }) => {
+// The result's text and buttons, and the ad when it shows, are all in the window and the results need no scrolling.
+async function expectAllInView(page, width, height) {
+  const visible = ['#solvedTitle', '#solvedText', '#playAgain', '#closeSolved'];
+  if (await page.locator('.ad').isVisible()) visible.push('#adBox', '.ad a');
+  for (const selector of visible) {
+    const r = await rect(page, selector);
+    expect(r.top, selector).toBeGreaterThanOrEqual(0);
+    expect(r.left, selector).toBeGreaterThanOrEqual(0);
+    expect(r.bottom, selector).toBeLessThanOrEqual(height);
+    expect(r.right, selector).toBeLessThanOrEqual(width);
+  }
+  expect(await page.locator('#solvedPanel').evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+}
+
+test('turning the phone leaves out an ad that no longer fits, and turning back brings the same one', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 750 });
   await page.goto('/?adtest=on');
   await page.keyboard.press('Shift');
   await finishTour(page);
   await expect(page.locator('#adBox ins')).toHaveCount(1);
   await page.setViewportSize({ width: 750, height: 390 });
+  await expect(page.locator('.ad')).toBeHidden();
+  await expectAllInView(page, 750, 390);
+  await page.setViewportSize({ width: 390, height: 750 });
+  await expect(page.locator('#adBox ins')).toBeVisible();
   const box = await page.locator('#adBox').boundingBox();
   expect([box.width, box.height]).toEqual([300, 250]);
+  await expectAllInView(page, 390, 750);
+  expect(await page.evaluate(() => window.__ads.length)).toBe(1);
+});
+
+test('an ad still loading when the phone turns goes to a box sized for the turned screen', async ({ page }) => {
+  let release;
+  const held = new Promise((resolve) => (release = resolve));
+  await page.route('https://ihtfy.com/ads/v1.js', async (route) => {
+    await held;
+    await route.fulfill({ contentType: 'text/javascript', body: LOADER_STUB });
+  });
+  await page.setViewportSize({ width: 390, height: 750 });
+  await page.goto('/?adtest=on');
+  await page.keyboard.press('Shift');
+  await finishTour(page);
+  await page.setViewportSize({ width: 750, height: 390 });
+  await expect(page.locator('#adBox')).toHaveAttribute('data-ad-size', '320x50');
+  await expect(page.locator('.ad')).toBeVisible();
+  release();
+  await expect(page.locator('#adBox ins')).toBeVisible();
+  expect(await page.evaluate(() => window.__ads.map((ad) => ad.size))).toEqual(['320x50']);
+  await expectAllInView(page, 750, 390);
+});
+
+test('an ad the loader took but has not placed when the phone turns goes nowhere, and a box sized for the turned screen gets one', async ({ page }) => {
+  // This loader takes the box at once but places its ad only when the test says, as AdSense does once it has loaded.
+  await page.route('https://ihtfy.com/ads/v1.js', (route) =>
+    route.fulfill({
+      contentType: 'text/javascript',
+      body: `${LOADER_STUB}
+        window.__waiting = [];
+        window.ihtfyAds.show = (box, key) => {
+          const [width, height] = box.dataset.adSize.split('x');
+          window.__ads.push({ key, size: box.dataset.adSize });
+          window.__waiting.push(() => {
+            if (!box.isConnected) return;
+            const ins = document.createElement('ins');
+            ins.className = 'adsbygoogle';
+            ins.style.cssText = 'display:inline-block;width:' + width + 'px;height:' + height + 'px';
+            box.appendChild(ins);
+          });
+        };
+        window.__place = () => window.__waiting.splice(0).forEach((place) => place());`,
+    }),
+  );
+  await page.setViewportSize({ width: 390, height: 750 });
+  await page.goto('/?adtest=on');
+  await page.keyboard.press('Shift');
+  await finishTour(page);
+  await page.waitForFunction(() => window.__ads?.length === 1);
+  await page.setViewportSize({ width: 750, height: 390 });
+  await page.waitForFunction(() => window.__ads.length === 2);
+  await page.evaluate(() => window.__place());
+  await expect(page.locator('ins')).toHaveCount(1);
+  await expect(page.locator('#adBox ins')).toBeVisible();
+  const [first, second] = await page.evaluate(() => window.__ads);
+  expect(first.size).toBe('300x250');
+  expect(second).toEqual({ key: `${first.key}/1`, size: '320x50' });
+  await expectAllInView(page, 750, 390);
+});
+
+// A landscape phone at its first view of the results: the ad shows where it fits in full, and is left out where it doesn't.
+for (const [width, height, shown] of [[740, 360, true], [844, 390, true], [568, 320, false]]) {
+  test(`a landscape phone at ${width}x${height} sees the result and both buttons without scrolling`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto('/?adtest=on');
+    await page.keyboard.press('Shift');
+    await finishTour(page);
+    if (shown) await expect(page.locator('#adBox ins')).toBeVisible();
+    else await page.waitForTimeout(300);
+    await expectAllInView(page, width, height);
+    expect(await page.locator('.ad').isVisible()).toBe(shown);
+    expect(await page.evaluate(() => window.__ads?.length ?? 0)).toBe(shown ? 1 : 0);
+  });
+}
+
+test('an ad left out at the first view takes the size the window has when it shows', async ({ page }) => {
+  await page.setViewportSize({ width: 568, height: 320 });
+  await page.goto('/?adtest=on');
+  await page.keyboard.press('Shift');
+  await finishTour(page);
+  await expect(page.locator('.ad')).toBeHidden();
+  await page.setViewportSize({ width: 360, height: 740 });
+  await expect(page.locator('#adBox ins')).toBeVisible();
+  const box = await page.locator('#adBox').boundingBox();
+  expect([box.width, box.height]).toEqual([300, 250]);
+  expect(await page.evaluate(() => window.__ads.map((ad) => ad.size))).toEqual(['300x250']);
+  await expectAllInView(page, 360, 740);
 });

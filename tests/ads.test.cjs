@@ -147,9 +147,13 @@ function railBox() {
     dataset: {},
     style: {},
     removeAttribute(name) { if (name === 'style') rail.style = {}; },
+    // The aside around the box, and the ad the loader puts in it.
+    parentElement: { hidden: false },
+    ins: null,
+    querySelector: (selector) => (selector === 'ins' ? rail.ins : null),
     get offsetWidth() { return railSize[0]; },
     get offsetHeight() { return railSize[1]; },
-    cloneNode: () => Object.assign(railBox(), { dataset: { ...rail.dataset } }),
+    cloneNode: () => Object.assign(railBox(), { dataset: { ...rail.dataset }, style: { ...rail.style }, parentElement: rail.parentElement }),
     replaceWith(next) { rail.isConnected = false; rail.next = next; },
   };
   return rail;
@@ -300,9 +304,18 @@ test('a failed request lets the next run try the ad beside the board again', asy
 });
 
 // The results screen: a section holding the box the stylesheet sizes for the window.
+// `fits` says whether the window can hold the result, the ad and the buttons without scrolling.
 function screen(size = [300, 250]) {
   railSize = size;
-  const aside = { box: railBox(), querySelector: () => aside.box };
+  const aside = {
+    box: railBox(),
+    fits: true,
+    querySelector: () => aside.box,
+    clientHeight: 400,
+    clientWidth: 360,
+    get scrollHeight() { return aside.fits || aside.box.parentElement.hidden ? 400 : 600; },
+    scrollWidth: 360,
+  };
   return aside;
 }
 const adFreeGone = () => classes.delete('ad-free');
@@ -400,4 +413,98 @@ test('a results screen that was left is not given its ad when the token check en
   added[0].fire('load');
   await tick();
   assert.equal(shown.some(([, key]) => key === 'k'), false);
+});
+
+test('a results box the window cannot hold is left out and asked for once the window turns to hold it', async () => {
+  adFreeGone();
+  const results = screen();
+  results.fits = false;
+  context.showScreenAd('results', results, 'k');
+  const fresh = results.box.next;
+  assert.equal(fresh.parentElement.hidden, true);
+  assert.equal(added.length, 0);
+  results.fits = true;
+  fire('resize');
+  assert.equal(fresh.parentElement.hidden, false);
+  added[0].fire('load');
+  await tick();
+  assert.deepEqual(shownKeys(), [['300x250', 'k']]);
+  assert.equal(shown[0][0], fresh);
+});
+
+test('a placed results ad is left out while the window cannot hold it, and comes back without a new request', async () => {
+  adFreeGone();
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  added[0].fire('load');
+  await tick();
+  const fresh = results.box.next;
+  fresh.ins = {};
+  results.fits = false;
+  fire('resize');
+  assert.equal(fresh.parentElement.hidden, true);
+  assert.equal(fresh.isConnected, true);
+  assert.deepEqual({ ...fresh.style }, { width: '300px', height: '250px', minHeight: '250px' });
+  results.fits = true;
+  fire('resize');
+  await tick();
+  assert.equal(fresh.parentElement.hidden, false);
+  assert.equal(shown.length, 1);
+});
+
+test('a results box left out while the loader is arriving gets no ad, and a new box is asked for when it shows', async () => {
+  adFreeGone();
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  const first = results.box.next;
+  results.fits = false;
+  fire('resize');
+  assert.equal(first.isConnected, false);
+  added[0].fire('load');
+  await tick();
+  assert.deepEqual(shown, []);
+  results.fits = true;
+  fire('resize');
+  await tick();
+  assert.deepEqual(shownKeys(), [['300x250', 'k/1']]);
+  assert.equal(shown[0][0], first.next);
+  assert.deepEqual({ ...first.next.style }, { width: '300px', height: '250px', minHeight: '250px' });
+  assert.equal(added.length, 1);
+});
+
+test('a results box left out after the loader took it, before its ad arrived, is swapped for one asked for when it shows', async () => {
+  adFreeGone();
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  added[0].fire('load');
+  await tick();
+  const first = results.box.next;
+  assert.deepEqual(shownKeys(), [['300x250', 'k']]);
+  results.fits = false;
+  fire('resize');
+  // The loader still holds the first box, but it is off the page, so its ad goes nowhere.
+  assert.equal(first.isConnected, false);
+  results.fits = false;
+  fire('resize');
+  assert.equal(first.next.isConnected, true);
+  results.fits = true;
+  fire('resize');
+  await tick();
+  assert.deepEqual(shownKeys(), [['300x250', 'k'], ['300x250', 'k/1']]);
+  assert.equal(shown[1][0], first.next);
+});
+
+test('a results screen that was left stops following the window', async () => {
+  adFreeGone();
+  const results = screen();
+  results.fits = false;
+  context.showScreenAd('results', results, 'k');
+  const fresh = results.box.next;
+  results.box = fresh;
+  context.clearScreenAd(results);
+  results.fits = true;
+  fire('resize');
+  await tick();
+  assert.equal(added.length, 0);
+  assert.deepEqual(shown, []);
 });

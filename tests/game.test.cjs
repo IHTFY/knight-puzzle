@@ -19,6 +19,7 @@ function game(globals = {}) {
         style: {},
         attributes: {},
         dataset: {},
+        parentElement: {},
         cloneNode: () => ({ ...elements.get(id), dataset: {} }),
         replaceWith: (next) => elements.set(id, next),
         removeAttribute() {},
