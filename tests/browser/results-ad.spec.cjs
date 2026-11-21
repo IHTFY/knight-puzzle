@@ -170,13 +170,70 @@ test('a buyer gets no results box, no reserved space and no request', async ({ p
   expect(again.bottom).toBeLessThanOrEqual(750);
 });
 
-test('turning the phone does not resize the box once the ad is placed', async ({ page }) => {
+// The result's text and buttons, and the ad when it shows, are all in the window and the results need no scrolling.
+async function expectAllInView(page, width, height) {
+  const visible = ['#solvedTitle', '#solvedText', '#playAgain', '#closeSolved'];
+  if (await page.locator('.ad').isVisible()) visible.push('#adBox', '.ad a');
+  for (const selector of visible) {
+    const r = await rect(page, selector);
+    expect(r.top, selector).toBeGreaterThanOrEqual(0);
+    expect(r.left, selector).toBeGreaterThanOrEqual(0);
+    expect(r.bottom, selector).toBeLessThanOrEqual(height);
+    expect(r.right, selector).toBeLessThanOrEqual(width);
+  }
+  expect(await page.locator('#solvedPanel').evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+}
+
+test('turning the phone leaves out an ad that no longer fits, and turning back brings the same one', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 750 });
   await page.goto('/?adtest=on');
   await page.keyboard.press('Shift');
   await finishTour(page);
   await expect(page.locator('#adBox ins')).toHaveCount(1);
   await page.setViewportSize({ width: 750, height: 390 });
+  await expect(page.locator('.ad')).toBeHidden();
+  await expectAllInView(page, 750, 390);
+  await page.setViewportSize({ width: 390, height: 750 });
+  await expect(page.locator('#adBox ins')).toBeVisible();
   const box = await page.locator('#adBox').boundingBox();
   expect([box.width, box.height]).toEqual([300, 250]);
+  await expectAllInView(page, 390, 750);
+  expect(await page.evaluate(() => window.__ads.length)).toBe(1);
 });
+
+test('an ad still loading when the phone turns is placed only once its box shows again', async ({ page }) => {
+  let release;
+  const held = new Promise((resolve) => (release = resolve));
+  await page.route('https://ihtfy.com/ads/v1.js', async (route) => {
+    await held;
+    await route.fulfill({ contentType: 'text/javascript', body: LOADER_STUB });
+  });
+  await page.setViewportSize({ width: 390, height: 750 });
+  await page.goto('/?adtest=on');
+  await page.keyboard.press('Shift');
+  await finishTour(page);
+  await page.setViewportSize({ width: 750, height: 390 });
+  await expect(page.locator('.ad')).toBeHidden();
+  release();
+  await page.waitForFunction(() => window.ihtfyAds);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__ads.length)).toBe(0);
+  await page.setViewportSize({ width: 390, height: 750 });
+  await expect(page.locator('#adBox ins')).toBeVisible();
+  expect(await page.evaluate(() => window.__ads.map((ad) => ad.size))).toEqual(['300x250']);
+});
+
+// A landscape phone at its first view of the results: the ad shows where it fits in full, and is left out where it doesn't.
+for (const [width, height] of [[740, 360], [844, 390], [568, 320]]) {
+  test(`a landscape phone at ${width}x${height} sees the result and both buttons without scrolling`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto('/?adtest=on');
+    await page.keyboard.press('Shift');
+    await finishTour(page);
+    await page.waitForTimeout(300);
+    await expectAllInView(page, width, height);
+    const shown = await page.locator('.ad').isVisible();
+    expect(await page.evaluate(() => window.__ads?.length ?? 0)).toBe(shown ? 1 : 0);
+    console.log(`${width}x${height} ad ${shown ? 'shown' : 'left out'}`);
+  });
+}

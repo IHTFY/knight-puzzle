@@ -60,12 +60,13 @@ function loadForBuyer() {
   if (mayBeAdFree()) loadAds().catch(() => {});
 }
 
-/** Fills `box` with an ad for the game over named `key`; offline or on failure it stays empty. Resolves to whether the loader was asked to place it. */
+/** Fills `box` with an ad for the game over named `key`; offline, on failure, or when the box isn't showing once the loader arrives, it stays empty. Resolves to whether the loader was asked to place it. */
 function showAd(box, key) {
   if (!navigator.onLine) return Promise.resolve(false);
   return loadAds().then(
     () => {
-      if (!box.isConnected) return false;
+      // Off the page, or left out by the styles: either way the box has no width, and gets no ad.
+      if (!box.offsetWidth) return false;
       window.ihtfyAds.show(box, key);
       return true;
     },
@@ -86,6 +87,9 @@ const AD_SCREEN = 'results';
 // The results screen that opened before the loader had checked a stored ad-free token.
 let waitingScreen = null;
 
+// The results ad on screen: its section, box and key, and whether the loader has been asked to place it.
+let screenAd = null;
+
 /**
  * Puts a new box on the screen named `name` (whose element is `screen`, already
  * showing, so the stylesheet has sized the box) and fills it for the game over
@@ -99,6 +103,7 @@ function showScreenAd(name, screen, key) {
   if (waitingScreen) return;
   const box = renewAdBox(screen.querySelector('.ad-box'));
   box.removeAttribute('style'); // The last ad's size, kept for its own screen visit.
+  box.parentElement.hidden = false; // Left out on the last visit, so it has no size to measure.
   box.dataset.adSlot = AD_SLOT;
   const size = sizeOf(box);
   if (!size) return;
@@ -106,12 +111,36 @@ function showScreenAd(name, screen, key) {
   // The loader's unit keeps this size, so the box does too if the window turns before the screen closes.
   const [width, height] = size.split('x');
   Object.assign(box.style, { width: `${width}px`, height: `${height}px`, minHeight: `${height}px` });
-  showAd(box, key);
+  screenAd = { screen, box, key, asked: false };
+  fitScreenAd();
 }
+
+/**
+ * Leaves the results ad, its label and its link out while the screen can't hold
+ * them with the result and its buttons, as on a phone turned on its side, and
+ * brings the same box back once it can. The ad is asked for the first time its
+ * box shows; a box that was left out while the loader was arriving is asked for
+ * again when it next shows. A box keeps its ad, so none is asked for twice.
+ */
+function fitScreenAd() {
+  if (!screenAd) return;
+  const { screen, box, key } = screenAd;
+  const ad = box.parentElement;
+  ad.hidden = false;
+  ad.hidden = screen.scrollHeight > screen.clientHeight || screen.scrollWidth > screen.clientWidth;
+  if (ad.hidden || screenAd.asked) return;
+  const asking = screenAd;
+  asking.asked = true;
+  showAd(box, key).then((placed) => {
+    if (!placed && !box.offsetWidth) asking.asked = false;
+  });
+}
+window.addEventListener('resize', fitScreenAd);
 
 /** Swaps the box on a screen that is going away for an empty one, so no ad stays on the page out of view. */
 function clearScreenAd(screen) {
   waitingScreen = null;
+  screenAd = null;
   renewAdBox(screen.querySelector('.ad-box'));
 }
 

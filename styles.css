@@ -1299,7 +1299,9 @@ td.split-cell.slow-split::before {
     margin-inline: -10px;
   }
 }
-:root.ad-free .ad {
+/* main.js leaves the ad out where the screen can't hold it with the result and its buttons. */
+:root.ad-free .ad,
+.ad[hidden] {
   display: none;
 }
 .results-actions {

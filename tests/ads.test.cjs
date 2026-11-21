@@ -17,7 +17,8 @@ let now;
 let classes;
 
 const tick = () => new Promise((resolve) => setTimeout(resolve));
-const box = () => ({ isConnected: true });
+// A box on the page has a width; one taken off the page, or left out by the styles, has none.
+const box = () => ({ isConnected: true, shown: true, get offsetWidth() { return this.isConnected && this.shown ? 300 : 0; } });
 const showAd = (...args) => context.showAd(...args);
 
 beforeEach(() => {
@@ -97,7 +98,7 @@ test('stays quiet when the loader fails, and tries again on the next game over',
 });
 
 test('a box swapped out on close is skipped by a request still waiting on the loader', async () => {
-  const old = { isConnected: true, cloneNode: () => ({ isConnected: false }), replaceWith(fresh) { old.isConnected = false; fresh.isConnected = true; } };
+  const old = Object.assign(box(), { cloneNode: () => ({ isConnected: false }), replaceWith(fresh) { old.isConnected = false; fresh.isConnected = true; } });
   showAd(old, 'a');
   const fresh = context.renewAdBox(old);
   added[0].fire('load');
@@ -147,9 +148,10 @@ function railBox() {
     dataset: {},
     style: {},
     removeAttribute(name) { if (name === 'style') rail.style = {}; },
-    get offsetWidth() { return railSize[0]; },
-    get offsetHeight() { return railSize[1]; },
-    cloneNode: () => Object.assign(railBox(), { dataset: { ...rail.dataset } }),
+    parentElement: { hidden: false },
+    get offsetWidth() { return rail.isConnected && !rail.parentElement.hidden ? railSize[0] : 0; },
+    get offsetHeight() { return rail.isConnected && !rail.parentElement.hidden ? railSize[1] : 0; },
+    cloneNode: () => Object.assign(railBox(), { dataset: { ...rail.dataset }, parentElement: rail.parentElement }),
     replaceWith(next) { rail.isConnected = false; rail.next = next; },
   };
   return rail;
@@ -300,9 +302,18 @@ test('a failed request lets the next run try the ad beside the board again', asy
 });
 
 // The results screen: a section holding the box the stylesheet sizes for the window.
+// `fits` says whether the window can hold the result, the ad and the buttons without scrolling.
 function screen(size = [300, 250]) {
   railSize = size;
-  const aside = { box: railBox(), querySelector: () => aside.box };
+  const aside = {
+    box: railBox(),
+    fits: true,
+    querySelector: () => aside.box,
+    clientHeight: 400,
+    clientWidth: 360,
+    get scrollHeight() { return aside.fits || aside.box.parentElement.hidden ? 400 : 600; },
+    scrollWidth: 360,
+  };
   return aside;
 }
 const adFreeGone = () => classes.delete('ad-free');
@@ -400,4 +411,70 @@ test('a results screen that was left is not given its ad when the token check en
   added[0].fire('load');
   await tick();
   assert.equal(shown.some(([, key]) => key === 'k'), false);
+});
+
+test('a results box the window cannot hold is left out and asked for once the window turns to hold it', async () => {
+  adFreeGone();
+  const results = screen();
+  results.fits = false;
+  context.showScreenAd('results', results, 'k');
+  const fresh = results.box.next;
+  assert.equal(fresh.parentElement.hidden, true);
+  assert.equal(added.length, 0);
+  results.fits = true;
+  fire('resize');
+  assert.equal(fresh.parentElement.hidden, false);
+  added[0].fire('load');
+  await tick();
+  assert.deepEqual(shownKeys(), [['300x250', 'k']]);
+  assert.equal(shown[0][0], fresh);
+});
+
+test('a placed results ad is left out while the window cannot hold it, and comes back without a new request', async () => {
+  adFreeGone();
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  added[0].fire('load');
+  await tick();
+  const fresh = results.box.next;
+  results.fits = false;
+  fire('resize');
+  assert.equal(fresh.parentElement.hidden, true);
+  assert.deepEqual({ ...fresh.style }, { width: '300px', height: '250px', minHeight: '250px' });
+  results.fits = true;
+  fire('resize');
+  await tick();
+  assert.equal(fresh.parentElement.hidden, false);
+  assert.equal(shown.length, 1);
+});
+
+test('a results box left out while the loader is arriving is asked for again when it next shows', async () => {
+  adFreeGone();
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  results.fits = false;
+  fire('resize');
+  added[0].fire('load');
+  await tick();
+  assert.deepEqual(shown, []);
+  results.fits = true;
+  fire('resize');
+  await tick();
+  assert.deepEqual(shownKeys(), [['300x250', 'k']]);
+  assert.equal(added.length, 1);
+});
+
+test('a results screen that was left stops following the window', async () => {
+  adFreeGone();
+  const results = screen();
+  results.fits = false;
+  context.showScreenAd('results', results, 'k');
+  const fresh = results.box.next;
+  results.box = fresh;
+  context.clearScreenAd(results);
+  results.fits = true;
+  fire('resize');
+  await tick();
+  assert.equal(added.length, 0);
+  assert.deepEqual(shown, []);
 });
