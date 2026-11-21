@@ -6,18 +6,19 @@ test.beforeEach(async ({ context }) => {
 });
 
 // Playwright has no display-mode emulation, so the page sees itself as the installed app.
-// The page records whether it started in the launch state and every animation it starts.
+// The page records whether it ever entered the launch state and every animation it starts.
 // With `hold`, the exit's animations are paused, at their 'start' or 'end', instead of playing.
-async function installedApp(page, { hold } = {}) {
-  await page.addInitScript((hold) => {
+async function installedApp(page, { hold, mode = 'standalone' } = {}) {
+  await page.addInitScript(({ hold, mode }) => {
     const real = window.matchMedia.bind(window);
     window.matchMedia = (query) =>
       query.includes('display-mode')
-        ? { matches: true, media: query, addEventListener() {}, removeEventListener() {} }
+        ? { matches: query.includes(mode), media: query, addEventListener() {}, removeEventListener() {} }
         : real(query);
-    document.addEventListener('DOMContentLoaded', () => {
-      window.startedLaunching = document.documentElement.classList.contains('launching');
-    });
+    window.startedLaunching = false;
+    new MutationObserver(() => {
+      if (document.documentElement.classList.contains('launching')) window.startedLaunching = true;
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] });
     window.started = [];
     const animate = Element.prototype.animate;
     Element.prototype.animate = function (keyframes, options) {
@@ -41,7 +42,7 @@ async function installedApp(page, { hold } = {}) {
           });
       },
     });
-  }, hold);
+  }, { hold, mode });
 }
 
 const launching = (page) => page.evaluate(() => document.documentElement.classList.contains('launching'));
@@ -135,8 +136,24 @@ test('the copy still goes if the exit fails to start', async ({ page }) => {
   });
   await page.goto('/');
   expect(await page.evaluate(() => window.startedLaunching)).toBe(true);
+  await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+  expect(await launching(page)).toBe(false);
+});
+
+test('a stalled exit still ends, and leaves the logo showing', async ({ page }) => {
+  await installedApp(page, { hold: 'start' });
+  await page.goto('/');
+  await page.waitForFunction(() => window.launchHeld);
   await expect(page.locator('#launch')).toHaveCount(0, { timeout: 6000 });
   expect(await launching(page)).toBe(false);
+  await expect(page.locator('.brand img')).toHaveCSS('opacity', '1');
+});
+
+test('a fullscreen browser tab is not the installed app', async ({ page }) => {
+  await installedApp(page, { mode: 'fullscreen' });
+  await page.goto('/');
+  expect(await page.evaluate(() => window.startedLaunching)).toBe(false);
+  await expect(page.locator('#launch')).toBeHidden();
 });
 
 test('reduced motion gets a short fade and no flight', async ({ page }) => {

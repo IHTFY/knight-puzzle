@@ -69,7 +69,7 @@
         const root = document.documentElement;
         try {
           const nav = performance.getEntriesByType('navigation')[0];
-          const app = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+          const app = matchMedia('(display-mode: standalone)').matches;
           if (!app || nav?.type !== 'navigate' || sessionStorage.getItem('launched')) return;
           sessionStorage.setItem('launched', '1');
         } catch {
@@ -87,6 +87,8 @@
         const skippers = ['pointerdown', 'keydown', 'resize'];
         const end = () => {
           clearTimeout(fallback);
+          // Drops the fills too, so nothing in the game stays hidden if the fallback cuts the exit short.
+          animations?.forEach((a) => a.cancel());
           skippers.forEach((type) => removeEventListener(type, skip, true));
           root.classList.remove('launching');
           document.getElementById('launch')?.remove();
@@ -102,15 +104,19 @@
           if (!overlay) return;
           if (skipped) return end();
           animations = [];
-          if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            try {
-              animations = play(overlay);
-            } catch {
-              animations = [];
+          try {
+            if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+              try {
+                animations = play(overlay);
+              } catch {
+                animations = [];
+              }
             }
-          }
-          if (!animations.length) {
-            animations = [overlay.animate({ opacity: [1, 0] }, { duration: 200, easing: 'ease-out', fill: 'forwards' })];
+            if (!animations.length) {
+              animations = [overlay.animate({ opacity: [1, 0] }, { duration: 200, easing: 'ease-out', fill: 'forwards' })];
+            }
+          } catch {
+            return end();
           }
           Promise.all(animations.map((a) => a.finished)).then(end, end);
         };
