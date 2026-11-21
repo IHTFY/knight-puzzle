@@ -113,8 +113,8 @@ function showScreenAd(name, screen, key) {
  * brings them back once it can. The ad is asked for when its box first shows,
  * and a placed ad stays in its box, so none is asked for twice. The loader
  * places an ad in any box still on the page, shown or not, so a box left out
- * before its ad arrived is swapped for an empty one, and that one is asked for
- * when it shows.
+ * before its ad arrived is swapped for an empty one, which is asked for as soon
+ * as the unit this window gives it fits.
  */
 function fitScreenAd() {
   if (!screenAd) return;
@@ -142,6 +142,7 @@ function fitScreenAd() {
     screenAd.box = renewAdBox(screenAd.box);
     screenAd.asked = false;
     screenAd.swaps++;
+    fitScreenAd(); // The new box may fit at the size this window gives it.
   }
 }
 window.addEventListener('resize', fitScreenAd);
