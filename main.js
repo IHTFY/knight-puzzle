@@ -1355,10 +1355,17 @@ globalThis.launchExit?.((overlay) => {
     logo.animate({ opacity: [0, 0] }, { duration }),
   ];
   // A resize or the ad rail coming back mid-flight (a stored ad-free token the loader rejects) can
-  // move the logo, so the flight skips to the end if it does.
+  // move the helmet's start or the logo, so the flight skips to the end if either moves.
+  const { clientWidth, clientHeight } = overlay;
   const check = () => {
     const now = logo.getBoundingClientRect();
-    if (now.left !== to.left || now.top !== to.top || now.width !== to.width) {
+    if (
+      overlay.clientWidth !== clientWidth ||
+      overlay.clientHeight !== clientHeight ||
+      now.left !== to.left ||
+      now.top !== to.top ||
+      now.width !== to.width
+    ) {
       animations.forEach((animation) => animation.finish());
     }
   };

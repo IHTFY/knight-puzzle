@@ -100,6 +100,7 @@ test('a tap skips to the end', async ({ page }) => {
 for (const [name, act] of [
   ['a key', (page) => page.keyboard.press('Tab')],
   ['a resize that moves the logo', (page) => page.setViewportSize({ width: 800, height: 360 })],
+  ['a resize that moves the helmet', (page) => page.setViewportSize({ width: 360, height: 700 })],
 ]) {
   test(`${name} skips to the end`, async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 722 });
@@ -112,12 +113,12 @@ for (const [name, act] of [
   });
 }
 
-test('a resize that leaves the logo in place keeps the flight', async ({ page }) => {
+test('a resize event that changes nothing keeps the flight', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 722 });
   await installedApp(page, { hold: 'start' });
   await page.goto('/', { waitUntil: 'commit' });
   await page.waitForFunction(() => window.launchHeld);
-  await page.setViewportSize({ width: 360, height: 700 });
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')));
   // Only a skip would take the paused copy away.
   await page.waitForTimeout(300);
   await expect(page.locator('#launch')).toHaveCount(1);
