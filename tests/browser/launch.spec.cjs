@@ -99,7 +99,6 @@ test('a tap skips to the end', async ({ page }) => {
 for (const [name, act] of [
   ['a key', (page) => page.keyboard.press('Tab')],
   ['a resize, which would move the landing spot,', (page) => page.setViewportSize({ width: 800, height: 360 })],
-  ['the ad rail coming back', (page) => page.evaluate(() => document.documentElement.classList.toggle('ad-free'))],
 ]) {
   test(`${name} skips to the end`, async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 722 });
@@ -112,16 +111,41 @@ for (const [name, act] of [
   });
 }
 
-test('a buyer whose rail stays hidden gets the whole flight', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.addInitScript(() => localStorage.setItem('ihtfy-ad-free', 'token'));
-  await installedApp(page, { hold: 'start' });
+// A rejected ad-free token brings the rail back (the class goes); a valid one leaves it hidden.
+for (const { width, height, moves } of [
+  { width: 1920, height: 1080, moves: true },
+  { width: 360, height: 722, moves: false },
+]) {
+  test(`the rail coming back at ${width}x${height} ${moves ? 'skips' : 'keeps'} the flight`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.addInitScript(() => localStorage.setItem('ihtfy-ad-free', 'token'));
+    await installedApp(page, { hold: 'start' });
+    await page.goto('/');
+    await page.waitForFunction(() => window.launchHeld);
+    // Only a skip would take the paused copy away.
+    await page.waitForTimeout(300);
+    await expect(page.locator('#launch')).toHaveCount(1);
+    await page.evaluate(() => document.documentElement.classList.remove('ad-free'));
+    if (moves) {
+      await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+    } else {
+      await page.waitForTimeout(300);
+      await expect(page.locator('#launch')).toHaveCount(1);
+    }
+  });
+}
+
+test('a fallback that fires before the copy is parsed leaves the game alone', async ({ page }) => {
+  await installedApp(page);
+  // Holds the first head script after the launch script past the 4 s fallback.
+  await page.route('**/jquery.min.js', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 4500));
+    await route.continue();
+  });
   await page.goto('/');
-  await page.waitForFunction(() => window.launchHeld);
-  expect(await page.evaluate(() => document.documentElement.classList.contains('ad-free'))).toBe(true);
-  // Only a skip would take the paused copy away.
-  await page.waitForTimeout(300);
-  await expect(page.locator('#launch')).toHaveCount(1);
+  expect(await page.evaluate(() => window.started)).toEqual([]);
+  await expect(page.locator('#launch')).toHaveCount(0);
+  await expect(page.locator('.brand img')).toHaveCSS('opacity', '1');
 });
 
 test('a tap before the game is ready ends the launch as soon as it is', async ({ page }) => {

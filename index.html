@@ -84,6 +84,7 @@
         root.classList.add('launching');
         let animations;
         let skipped = false;
+        let ended = false;
         // A tap or key skips to the end, and so does a resize, which would move the landing spot.
         // Before the exit starts, the copy goes as soon as the game is ready.
         const skip = () => {
@@ -91,11 +92,9 @@
           animations?.forEach((a) => a.finish());
         };
         const skippers = ['pointerdown', 'keydown', 'resize'];
-        // A class change on the root mid-exit (the ad rail coming back) can move the landing spot too.
-        const restyled = new MutationObserver(() => animations?.forEach((a) => a.finish()));
         const end = () => {
+          ended = true;
           clearTimeout(fallback);
-          restyled.disconnect();
           // Drops the fills too, so nothing in the game stays hidden if the fallback cuts the exit short.
           animations?.forEach((a) => a.cancel());
           skippers.forEach((type) => removeEventListener(type, skip, true));
@@ -103,15 +102,14 @@
           document.getElementById('launch')?.remove();
         };
         skippers.forEach((type) => addEventListener(type, skip, true));
-        restyled.observe(root, { attributeFilter: ['class'] });
         // The game never stays hidden behind the copy, even if it fails to call launchExit or the
         // exit fails to start.
         const fallback = setTimeout(end, 4000);
         // play(overlay) starts the game's exit and returns its Web Animations.
         window.launchExit = (play) => {
+          // Too late: the fallback already ended the launch, perhaps before the copy was parsed.
+          if (ended) return document.getElementById('launch')?.remove();
           const overlay = document.getElementById('launch');
-          // Too late: the fallback already removed the copy.
-          if (!overlay) return;
           if (skipped) return end();
           animations = [];
           try {

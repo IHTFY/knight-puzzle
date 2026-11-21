@@ -1329,7 +1329,7 @@ globalThis.launchExit?.((overlay) => {
   const longLeg = Math.max(Math.abs(dx), Math.abs(dy));
   const midScale = lift + ((scale - lift) * longLeg) / (Math.abs(dx) + Math.abs(dy) || 1);
   const duration = 1100;
-  return [
+  const animations = [
     overlay.animate(
       { backgroundColor: ['#070f20', 'rgb(7 15 32 / 0)'] },
       { duration: 700, delay: 250, easing: 'ease-in', fill: 'forwards' },
@@ -1354,4 +1354,16 @@ globalThis.launchExit?.((overlay) => {
     // The real logo stays hidden until the helmet lands on it.
     logo.animate({ opacity: [0, 0] }, { duration }),
   ];
+  // The ad rail coming back mid-flight (a stored ad-free token the loader rejects) can move the
+  // logo, so the flight skips to the end if it does.
+  const moved = new MutationObserver(() => {
+    const now = logo.getBoundingClientRect();
+    if (now.left !== to.left || now.top !== to.top || now.width !== to.width) {
+      animations.forEach((animation) => animation.finish());
+    }
+  });
+  moved.observe(document.documentElement, { attributeFilter: ['class'] });
+  const stop = () => moved.disconnect();
+  Promise.all(animations.map((animation) => animation.finished)).then(stop, stop);
+  return animations;
 });
