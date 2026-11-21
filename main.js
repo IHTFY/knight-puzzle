@@ -608,7 +608,6 @@ const config = {
     if (finished) setTimeout(() => finished && showSolved(), SOLVED_DELAY_MS);
   },
   onDragMove: startTimer,
-  onSnapEnd: renderHighlights,
 };
 const board = Chessboard('board', config);
 renderHighlights();
@@ -619,8 +618,8 @@ const boardElement = document.getElementById('board');
 function moveTo(square) {
   const source = currentSquare;
   if (config.onDrop(source, square) === 'snapback') return;
+  // onDrop already drew the highlights, and moving the piece leaves the squares alone.
   board.move(`${source}-${square}`, false);
-  renderHighlights();
 }
 boardElement.addEventListener('click', (event) => {
   const square = event.target.closest('[data-square]')?.dataset.square;
