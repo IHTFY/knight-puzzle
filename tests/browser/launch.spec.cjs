@@ -94,6 +94,51 @@ test('a tap skips to the end', async ({ page }) => {
   await expect(page.locator('.brand img')).toHaveCSS('opacity', '1');
 });
 
+for (const [name, act] of [
+  ['a key', (page) => page.keyboard.press('Tab')],
+  ['a resize, which would move the landing spot,', (page) => page.setViewportSize({ width: 800, height: 360 })],
+]) {
+  test(`${name} skips to the end`, async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 722 });
+    await installedApp(page, { hold: 'start' });
+    await page.goto('/');
+    await page.waitForFunction(() => window.launchHeld);
+    await act(page);
+    await expect(page.locator('#launch')).toHaveCount(0);
+    expect(await launching(page)).toBe(false);
+  });
+}
+
+test('a tap before the game is ready ends the launch as soon as it is', async ({ page }) => {
+  let release;
+  const held = new Promise((resolve) => (release = resolve));
+  await page.route('**/main.js', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await installedApp(page);
+  const loaded = page.goto('/');
+  await page.locator('#launch').waitFor();
+  await page.locator('#launch').dispatchEvent('pointerdown');
+  release();
+  await loaded;
+  await expect(page.locator('#launch')).toHaveCount(0);
+  expect(await page.evaluate(() => window.started)).toEqual([]);
+});
+
+test('the copy still goes if the exit fails to start', async ({ page }) => {
+  await installedApp(page);
+  await page.addInitScript(() => {
+    Element.prototype.animate = () => {
+      throw new Error('no animations');
+    };
+  });
+  await page.goto('/');
+  expect(await page.evaluate(() => window.startedLaunching)).toBe(true);
+  await expect(page.locator('#launch')).toHaveCount(0, { timeout: 6000 });
+  expect(await launching(page)).toBe(false);
+});
+
 test('reduced motion gets a short fade and no flight', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await installedApp(page);

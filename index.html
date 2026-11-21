@@ -76,20 +76,32 @@
           return;
         }
         root.classList.add('launching');
+        let animations;
+        let skipped = false;
+        // A tap or key skips to the end, and so does a resize, which would move the landing spot.
+        // Before the exit starts, the copy goes as soon as the game is ready.
+        const skip = () => {
+          skipped = true;
+          animations?.forEach((a) => a.finish());
+        };
+        const skippers = ['pointerdown', 'keydown', 'resize'];
         const end = () => {
           clearTimeout(fallback);
+          skippers.forEach((type) => removeEventListener(type, skip, true));
           root.classList.remove('launching');
           document.getElementById('launch')?.remove();
         };
-        // The game never stays hidden behind the copy if it fails to call launchExit.
+        skippers.forEach((type) => addEventListener(type, skip, true));
+        // The game never stays hidden behind the copy, even if it fails to call launchExit or the
+        // exit fails to start.
         const fallback = setTimeout(end, 4000);
         // play(overlay) starts the game's exit and returns its Web Animations.
         window.launchExit = (play) => {
-          clearTimeout(fallback);
           const overlay = document.getElementById('launch');
           // Too late: the fallback already removed the copy.
           if (!overlay) return;
-          let animations = [];
+          if (skipped) return end();
+          animations = [];
           if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
             try {
               animations = play(overlay);
@@ -100,7 +112,6 @@
           if (!animations.length) {
             animations = [overlay.animate({ opacity: [1, 0] }, { duration: 200, easing: 'ease-out', fill: 'forwards' })];
           }
-          overlay.addEventListener('pointerdown', () => animations.forEach((a) => a.finish()), { once: true });
           Promise.all(animations.map((a) => a.finished)).then(end, end);
         };
       })();
