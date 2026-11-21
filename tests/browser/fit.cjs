@@ -37,14 +37,14 @@ async function expectTextInside(page, text, container) {
     ([text, container]) => {
       const range = document.createRange();
       range.selectNodeContents(document.querySelector(text));
-      const { left, right } = range.getBoundingClientRect();
-      const box = document.querySelector(container).getBoundingClientRect();
-      return [{ left, right }, { left: box.left, right: box.right }];
+      return [range.getBoundingClientRect().toJSON(), document.querySelector(container).getBoundingClientRect().toJSON()];
     },
     [text, container],
   );
   expect(inner.left, text).toBeGreaterThanOrEqual(outer.left - 0.5);
   expect(inner.right, text).toBeLessThanOrEqual(outer.right + 0.5);
+  expect(inner.top, text).toBeGreaterThanOrEqual(outer.top - 0.5);
+  expect(inner.bottom, text).toBeLessThanOrEqual(outer.bottom + 0.5);
 }
 
 module.exports = { CONTROLS, open, expectInView, expectTextInside };
