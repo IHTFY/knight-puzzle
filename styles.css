@@ -305,9 +305,20 @@ tbody tr.done td:first-child {
   .panel {
     gap: 10px;
   }
+  /* One row of cards, each at least as wide as its text. Where larger text
+     can't fit them all, the timer takes a row of its own. */
   .metrics {
-    grid-template-columns: 1fr 1fr 1.45fr;
+    display: flex;
+    flex-wrap: wrap;
     gap: 7px;
+  }
+  .metrics > .metric {
+    flex: 1 1 0;
+    min-width: auto;
+  }
+  /* The spare width splits as the old 1 : 1 : 1.45 columns did once padding is counted. */
+  .metrics > .timer {
+    flex-grow: 1.6;
   }
   .metric {
     padding: 12px 13px;
@@ -737,21 +748,25 @@ td.slow-split {
   overflow: visible;
 }
 .actions {
-  grid-template-columns: 93px minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 8px;
 }
 .history-buttons {
   display: grid;
-  grid-template-columns: 44px 44px;
+  grid-template-columns: 44px minmax(44px, max-content);
   gap: 5px;
 }
+/* As tall as its row, or taller where larger text wraps its label and
+   moves the route's length to a line of its own. */
 .route-button {
+  height: auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 0 8px;
   font-weight: 500;
-  padding: 0 9px;
+  padding: 4px 9px;
 }
 .route-button[aria-pressed='true'] {
   color: #e0c598;
@@ -822,7 +837,69 @@ td {
   }
 }
 
+/* A phone on its side: the controls fit beside the board without scrolling. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .layout {
+    grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+  }
+}
+/* A phone upright keeps at least a quarter of the window for the board. */
+@media (max-width: 760px) and (orientation: portrait) {
+  .layout {
+    grid-template-rows: minmax(25vh, 1fr) minmax(0, auto);
+  }
+}
+/* Where larger text makes the controls taller than their space, the panel
+   scrolls on its own and the board stays in view. Focus rings sit inside
+   the buttons so the panel's edge doesn't cut them off. */
+@media (max-width: 760px) and (orientation: portrait),
+  (orientation: landscape) and (max-height: 600px) {
+  .panel {
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .panel::-webkit-scrollbar {
+    display: none;
+  }
+  .panel button:focus-visible {
+    outline-offset: -3px;
+  }
+  /* The time breaks only where even a row of its own is too narrow for it. */
+  .timer .number {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+}
+/* Too short for the panel at its full spacing. */
+@media (orientation: landscape) and (max-height: 350px) {
+  .panel {
+    gap: 8px;
+  }
+  .metrics,
+  .actions {
+    gap: 6px;
+  }
+  .metric {
+    padding: 6px 12px;
+  }
+  .number {
+    font-size: 22px;
+  }
+  .timer .number {
+    font-size: 24px;
+  }
+  .progress {
+    margin-top: 6px;
+  }
+}
+
+/* As wide as its word, so larger text widens the button and its column. */
 .reset-button {
+  width: auto;
+  padding: 0 3px;
   background: #341e2b;
   border-color: #754252;
   color: #f3a7b2;
