@@ -17,8 +17,7 @@ let now;
 let classes;
 
 const tick = () => new Promise((resolve) => setTimeout(resolve));
-// A box on the page has a width; one taken off the page, or left out by the styles, has none.
-const box = () => ({ isConnected: true, shown: true, get offsetWidth() { return this.isConnected && this.shown ? 300 : 0; } });
+const box = () => ({ isConnected: true });
 const showAd = (...args) => context.showAd(...args);
 
 beforeEach(() => {
@@ -98,7 +97,7 @@ test('stays quiet when the loader fails, and tries again on the next game over',
 });
 
 test('a box swapped out on close is skipped by a request still waiting on the loader', async () => {
-  const old = Object.assign(box(), { cloneNode: () => ({ isConnected: false }), replaceWith(fresh) { old.isConnected = false; fresh.isConnected = true; } });
+  const old = { isConnected: true, cloneNode: () => ({ isConnected: false }), replaceWith(fresh) { old.isConnected = false; fresh.isConnected = true; } };
   showAd(old, 'a');
   const fresh = context.renewAdBox(old);
   added[0].fire('load');
@@ -148,10 +147,13 @@ function railBox() {
     dataset: {},
     style: {},
     removeAttribute(name) { if (name === 'style') rail.style = {}; },
+    // The aside around the box, and the ad the loader puts in it.
     parentElement: { hidden: false },
-    get offsetWidth() { return rail.isConnected && !rail.parentElement.hidden ? railSize[0] : 0; },
-    get offsetHeight() { return rail.isConnected && !rail.parentElement.hidden ? railSize[1] : 0; },
-    cloneNode: () => Object.assign(railBox(), { dataset: { ...rail.dataset }, parentElement: rail.parentElement }),
+    ins: null,
+    querySelector: (selector) => (selector === 'ins' ? rail.ins : null),
+    get offsetWidth() { return railSize[0]; },
+    get offsetHeight() { return railSize[1]; },
+    cloneNode: () => Object.assign(railBox(), { dataset: { ...rail.dataset }, style: { ...rail.style }, parentElement: rail.parentElement }),
     replaceWith(next) { rail.isConnected = false; rail.next = next; },
   };
   return rail;
@@ -437,9 +439,11 @@ test('a placed results ad is left out while the window cannot hold it, and comes
   added[0].fire('load');
   await tick();
   const fresh = results.box.next;
+  fresh.ins = {};
   results.fits = false;
   fire('resize');
   assert.equal(fresh.parentElement.hidden, true);
+  assert.equal(fresh.isConnected, true);
   assert.deepEqual({ ...fresh.style }, { width: '300px', height: '250px', minHeight: '250px' });
   results.fits = true;
   fire('resize');
@@ -448,20 +452,46 @@ test('a placed results ad is left out while the window cannot hold it, and comes
   assert.equal(shown.length, 1);
 });
 
-test('a results box left out while the loader is arriving is asked for again when it next shows', async () => {
+test('a results box left out while the loader is arriving gets no ad, and a new box is asked for when it shows', async () => {
   adFreeGone();
   const results = screen();
   context.showScreenAd('results', results, 'k');
+  const first = results.box.next;
   results.fits = false;
   fire('resize');
+  assert.equal(first.isConnected, false);
   added[0].fire('load');
   await tick();
   assert.deepEqual(shown, []);
   results.fits = true;
   fire('resize');
   await tick();
-  assert.deepEqual(shownKeys(), [['300x250', 'k']]);
+  assert.deepEqual(shownKeys(), [['300x250', 'k/1']]);
+  assert.equal(shown[0][0], first.next);
+  assert.deepEqual({ ...first.next.style }, { width: '300px', height: '250px', minHeight: '250px' });
   assert.equal(added.length, 1);
+});
+
+test('a results box left out after the loader took it, before its ad arrived, is swapped for one asked for when it shows', async () => {
+  adFreeGone();
+  const results = screen();
+  context.showScreenAd('results', results, 'k');
+  added[0].fire('load');
+  await tick();
+  const first = results.box.next;
+  assert.deepEqual(shownKeys(), [['300x250', 'k']]);
+  results.fits = false;
+  fire('resize');
+  // The loader still holds the first box, but it is off the page, so its ad goes nowhere.
+  assert.equal(first.isConnected, false);
+  results.fits = false;
+  fire('resize');
+  assert.equal(first.next.isConnected, true);
+  results.fits = true;
+  fire('resize');
+  await tick();
+  assert.deepEqual(shownKeys(), [['300x250', 'k'], ['300x250', 'k/1']]);
+  assert.equal(shown[1][0], first.next);
 });
 
 test('a results screen that was left stops following the window', async () => {

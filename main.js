@@ -60,13 +60,12 @@ function loadForBuyer() {
   if (mayBeAdFree()) loadAds().catch(() => {});
 }
 
-/** Fills `box` with an ad for the game over named `key`; offline, on failure, or when the box isn't showing once the loader arrives, it stays empty. Resolves to whether the loader was asked to place it. */
+/** Fills `box` with an ad for the game over named `key`; offline or on failure it stays empty. Resolves to whether the loader was asked to place it. */
 function showAd(box, key) {
   if (!navigator.onLine) return Promise.resolve(false);
   return loadAds().then(
     () => {
-      // Off the page, or left out by the styles: either way the box has no width, and gets no ad.
-      if (!box.offsetWidth) return false;
+      if (!box.isConnected) return false;
       window.ihtfyAds.show(box, key);
       return true;
     },
@@ -87,7 +86,8 @@ const AD_SCREEN = 'results';
 // The results screen that opened before the loader had checked a stored ad-free token.
 let waitingScreen = null;
 
-// The results ad on screen: its section, box and key, and whether the loader has been asked to place it.
+// The results ad on screen: its section, box and key, whether the loader has been
+// asked to fill this box, and how many boxes were swapped out before their ad arrived.
 let screenAd = null;
 
 /**
@@ -111,29 +111,36 @@ function showScreenAd(name, screen, key) {
   // The loader's unit keeps this size, so the box does too if the window turns before the screen closes.
   const [width, height] = size.split('x');
   Object.assign(box.style, { width: `${width}px`, height: `${height}px`, minHeight: `${height}px` });
-  screenAd = { screen, box, key, asked: false };
+  screenAd = { screen, box, key, asked: false, swaps: 0 };
   fitScreenAd();
 }
 
 /**
  * Leaves the results ad, its label and its link out while the screen can't hold
  * them with the result and its buttons, as on a phone turned on its side, and
- * brings the same box back once it can. The ad is asked for the first time its
- * box shows; a box that was left out while the loader was arriving is asked for
- * again when it next shows. A box keeps its ad, so none is asked for twice.
+ * brings them back once it can. The ad is asked for when its box first shows,
+ * and a placed ad stays in its box, so none is asked for twice. The loader
+ * places an ad in any box still on the page, shown or not, so a box left out
+ * before its ad arrived is swapped for an empty one, and that one is asked for
+ * when it shows.
  */
 function fitScreenAd() {
   if (!screenAd) return;
-  const { screen, box, key } = screenAd;
-  const ad = box.parentElement;
+  const ad = screenAd.box.parentElement;
   ad.hidden = false;
-  ad.hidden = screen.scrollHeight > screen.clientHeight || screen.scrollWidth > screen.clientWidth;
-  if (ad.hidden || screenAd.asked) return;
-  const asking = screenAd;
-  asking.asked = true;
-  showAd(box, key).then((placed) => {
-    if (!placed && !box.offsetWidth) asking.asked = false;
-  });
+  ad.hidden =
+    screenAd.screen.scrollHeight > screenAd.screen.clientHeight ||
+    screenAd.screen.scrollWidth > screenAd.screen.clientWidth;
+  if (!ad.hidden && !screenAd.asked) {
+    screenAd.asked = true;
+    const { box, key, swaps } = screenAd;
+    // The loader keeps a key it is still placing, so a swapped box gets a key of its own.
+    showAd(box, swaps ? `${key}/${swaps}` : key);
+  } else if (ad.hidden && screenAd.asked && !screenAd.box.querySelector('ins')) {
+    screenAd.box = renewAdBox(screenAd.box);
+    screenAd.asked = false;
+    screenAd.swaps++;
+  }
 }
 window.addEventListener('resize', fitScreenAd);
 

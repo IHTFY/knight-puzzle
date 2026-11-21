@@ -223,17 +223,55 @@ test('an ad still loading when the phone turns is placed only once its box shows
   expect(await page.evaluate(() => window.__ads.map((ad) => ad.size))).toEqual(['300x250']);
 });
 
+test('an ad the loader took but has not placed when the phone turns goes nowhere, and a new box gets one on turning back', async ({ page }) => {
+  // This loader takes the box at once but places its ad only when the test says, as AdSense does once it has loaded.
+  await page.route('https://ihtfy.com/ads/v1.js', (route) =>
+    route.fulfill({
+      contentType: 'text/javascript',
+      body: `${LOADER_STUB}
+        window.__waiting = [];
+        window.ihtfyAds.show = (box, key) => {
+          window.__ads.push({ key, size: box.dataset.adSize });
+          window.__waiting.push(() => {
+            if (!box.isConnected) return;
+            const ins = document.createElement('ins');
+            ins.className = 'adsbygoogle';
+            ins.style.cssText = 'display:inline-block;width:300px;height:250px';
+            box.appendChild(ins);
+          });
+        };
+        window.__place = () => window.__waiting.splice(0).forEach((place) => place());`,
+    }),
+  );
+  await page.setViewportSize({ width: 390, height: 750 });
+  await page.goto('/?adtest=on');
+  await page.keyboard.press('Shift');
+  await finishTour(page);
+  await page.waitForFunction(() => window.__ads?.length === 1);
+  await page.setViewportSize({ width: 750, height: 390 });
+  await expect(page.locator('.ad')).toBeHidden();
+  await page.evaluate(() => window.__place());
+  expect(await page.locator('ins').count()).toBe(0);
+  await page.setViewportSize({ width: 390, height: 750 });
+  await page.waitForFunction(() => window.__ads.length === 2);
+  await page.evaluate(() => window.__place());
+  await expect(page.locator('#adBox ins')).toBeVisible();
+  const [first, second] = await page.evaluate(() => window.__ads);
+  expect(second).toEqual({ key: `${first.key}/1`, size: '300x250' });
+  await expectAllInView(page, 390, 750);
+});
+
 // A landscape phone at its first view of the results: the ad shows where it fits in full, and is left out where it doesn't.
-for (const [width, height] of [[740, 360], [844, 390], [568, 320]]) {
+for (const [width, height, shown] of [[740, 360, true], [844, 390, true], [568, 320, false]]) {
   test(`a landscape phone at ${width}x${height} sees the result and both buttons without scrolling`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.goto('/?adtest=on');
     await page.keyboard.press('Shift');
     await finishTour(page);
-    await page.waitForTimeout(300);
+    if (shown) await expect(page.locator('#adBox ins')).toBeVisible();
+    else await page.waitForTimeout(300);
     await expectAllInView(page, width, height);
-    const shown = await page.locator('.ad').isVisible();
+    expect(await page.locator('.ad').isVisible()).toBe(shown);
     expect(await page.evaluate(() => window.__ads?.length ?? 0)).toBe(shown ? 1 : 0);
-    console.log(`${width}x${height} ad ${shown ? 'shown' : 'left out'}`);
   });
 }
