@@ -1274,8 +1274,22 @@ updateMotion();
 // Offline support. A new app version is applied only between games so a reload never loses a run.
 let swRegistration = null;
 let controllerChanged = false;
+let waitingForLaunch = false;
 function applyPendingUpdate() {
-  if (t_start !== null || !swRegistration) return;
+  if (t_start !== null || !swRegistration || waitingForLaunch) return;
+  // Nor during the installed app's launch, which a reload would cut short; it's applied once that ends.
+  const root = document.documentElement;
+  if (root.classList.contains('launching')) {
+    waitingForLaunch = true;
+    const launch = new MutationObserver(() => {
+      if (root.classList.contains('launching')) return;
+      launch.disconnect();
+      waitingForLaunch = false;
+      applyPendingUpdate();
+    });
+    launch.observe(root, { attributeFilter: ['class'] });
+    return;
+  }
   if (controllerChanged) location.reload();
   else if (swRegistration.waiting && navigator.serviceWorker.controller) {
     swRegistration.waiting.postMessage('skipWaiting');

@@ -585,6 +585,37 @@ test('a waiting update is activated straight away when idle', async () => {
   assert.deepEqual(posted, ['skipWaiting']);
 });
 
+test('a waiting update waits for the installed app launch to end', async () => {
+  const posted = [];
+  const registration = {
+    waiting: { postMessage: (message) => posted.push(message) },
+    addEventListener() {},
+    update: async () => {},
+  };
+  const serviceWorker = {
+    controller: {},
+    addEventListener() {},
+    register: async () => registration,
+  };
+  const g = game({ navigator: { serviceWorker }, location: { reload() {} } });
+  // The launch is still playing when the registration resolves.
+  g.run(`
+    globalThis.launching = true;
+    document.documentElement.classList.contains = (name) => name === 'launching' && launching;
+    globalThis.MutationObserver = class {
+      constructor(callback) { globalThis.classChanged = callback; }
+      observe() {}
+      disconnect() {}
+    };
+  `);
+  await new Promise(setImmediate);
+  assert.deepEqual(posted, [], 'no update mid-launch');
+  g.run('classChanged()');
+  assert.deepEqual(posted, [], 'a class change that leaves the launch going');
+  g.run('launching = false; classChanged()');
+  assert.deepEqual(posted, ['skipWaiting'], 'applied once the launch ends');
+});
+
 test('a later update reloads an idle page that first installed without a controller', async () => {
   const listeners = {};
   const posted = [];
