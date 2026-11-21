@@ -6,13 +6,16 @@ test.beforeEach(async ({ context }) => {
 });
 
 // Each highlight pass writes tabindex on every square, so the writes on a square
-// the knight never visits count the passes.
+// the knight never visits count the passes. The board's first resize, which
+// replaces the squares, runs within a frame or two of loading.
 async function countPasses(page) {
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
     window.highlightPasses = 0;
     new MutationObserver((records) => {
-      window.highlightPasses += records.length;
-    }).observe(document.querySelector('[data-square="a1"]'), {
+      window.highlightPasses += records.filter((record) => record.target.dataset.square === 'a1').length;
+    }).observe(document.getElementById('board'), {
+      subtree: true,
       attributes: true,
       attributeFilter: ['tabindex'],
     });
