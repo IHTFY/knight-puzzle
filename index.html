@@ -62,6 +62,12 @@
         text-align: center;
         color: #fff;
       }
+      /* Too short for the name below the helmet. */
+      @media (max-height: 300px) {
+        #launch-name {
+          display: none;
+        }
+      }
     </style>
     <script>
       // Plays once per fresh launch of the installed app: never in a browser tab, on reload, or on return.
@@ -85,8 +91,11 @@
           animations?.forEach((a) => a.finish());
         };
         const skippers = ['pointerdown', 'keydown', 'resize'];
+        // A class change on the root mid-exit (the ad rail coming back) can move the landing spot too.
+        const restyled = new MutationObserver(() => animations?.forEach((a) => a.finish()));
         const end = () => {
           clearTimeout(fallback);
+          restyled.disconnect();
           // Drops the fills too, so nothing in the game stays hidden if the fallback cuts the exit short.
           animations?.forEach((a) => a.cancel());
           skippers.forEach((type) => removeEventListener(type, skip, true));
@@ -94,6 +103,7 @@
           document.getElementById('launch')?.remove();
         };
         skippers.forEach((type) => addEventListener(type, skip, true));
+        restyled.observe(root, { attributeFilter: ['class'] });
         // The game never stays hidden behind the copy, even if it fails to call launchExit or the
         // exit fails to start.
         const fallback = setTimeout(end, 4000);
