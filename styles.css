@@ -319,7 +319,6 @@ tbody tr.done td:first-child {
   /* The spare width splits as the old 1 : 1 : 1.45 columns did once padding is counted. */
   .metrics > .timer {
     flex-grow: 1.6;
-    min-width: 110px;
   }
   .metric {
     padding: 12px 13px;
@@ -836,14 +835,24 @@ td {
   }
 }
 
-/* A phone on its side: the controls fit beside the board without scrolling.
-   Where larger text makes them taller than the window, the panel scrolls
-   on its own and the board stays in view. */
+/* A phone on its side: the controls fit beside the board without scrolling. */
 @media (orientation: landscape) and (max-height: 600px) {
   .layout {
     grid-template-rows: minmax(0, 1fr);
     height: 100%;
   }
+}
+/* A phone upright keeps at least a quarter of the window for the board. */
+@media (max-width: 760px) and (orientation: portrait) {
+  .layout {
+    grid-template-rows: minmax(25vh, 1fr) minmax(0, auto);
+  }
+}
+/* Where larger text makes the controls taller than their space, the panel
+   scrolls on its own and the board stays in view. Focus rings sit inside
+   the buttons so the panel's edge doesn't cut them off. */
+@media (max-width: 760px) and (orientation: portrait),
+  (orientation: landscape) and (max-height: 600px) {
   .panel {
     max-height: 100%;
     overflow-y: auto;
@@ -852,6 +861,9 @@ td {
   }
   .panel::-webkit-scrollbar {
     display: none;
+  }
+  .panel button:focus-visible {
+    outline-offset: -3px;
   }
 }
 /* Too short for the panel at its full spacing. */

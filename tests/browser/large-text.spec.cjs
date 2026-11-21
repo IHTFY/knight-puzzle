@@ -27,7 +27,20 @@ test('a short phone on its side reaches Rewind, Reset and Stats by scrolling the
   await page.setViewportSize({ width: 568, height: 320 });
   await expectInView(page, ['.board-wrap']);
   await page.locator('.panel').hover();
-  await page.mouse.wheel(0, 400);
-  await expect(async () => expectInView(page, ['#rewind', '#reset', '#statsButton'])).toPass();
+  await expect(async () => {
+    await page.mouse.wheel(0, 400);
+    await expectInView(page, ['#rewind', '#reset', '#statsButton']);
+  }).toPass({ timeout: 5000 });
   await expect(page.locator('#moveCount')).toHaveText('1');
+});
+
+test('a short upright window keeps a quarter of its height for the board and scrolls the controls', async ({ page }) => {
+  await open(page, 360, 400);
+  const board = await page.locator('.board-wrap').boundingBox();
+  expect(board.height).toBeGreaterThanOrEqual(400 / 4 - 0.5);
+  await page.locator('.panel').hover();
+  await expect(async () => {
+    await page.mouse.wheel(0, 400);
+    await expectInView(page, ['#rewind', '#reset', '#statsButton']);
+  }).toPass({ timeout: 5000 });
 });

@@ -8,15 +8,24 @@ async function open(page, width, height) {
   await expect(page.locator('.square-55d63').first()).toBeVisible();
 }
 
-// Each element lies inside the window.
+// Each element lies inside the window and, for the controls, inside the
+// part of the panel that isn't scrolled out of sight.
 async function expectInView(page, selectors) {
-  const { width, height } = page.viewportSize();
-  for (const selector of selectors) {
-    const box = await page.locator(selector).first().boundingBox();
-    expect(box.x, selector).toBeGreaterThanOrEqual(0);
-    expect(box.y, selector).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width, selector).toBeLessThanOrEqual(width + 0.5);
-    expect(box.y + box.height, selector).toBeLessThanOrEqual(height + 0.5);
+  const boxes = await page.evaluate((selectors) => {
+    const view = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+    const panel = document.querySelector('.panel');
+    return selectors.map((selector) => {
+      const element = document.querySelector(selector);
+      return { selector, box: element.getBoundingClientRect().toJSON(), bounds: panel.contains(element) ? [view, panel.getBoundingClientRect().toJSON()] : [view] };
+    });
+  }, selectors);
+  for (const { selector, box, bounds } of boxes) {
+    for (const bound of bounds) {
+      expect(box.left, selector).toBeGreaterThanOrEqual(bound.left - 0.5);
+      expect(box.top, selector).toBeGreaterThanOrEqual(bound.top - 0.5);
+      expect(box.right, selector).toBeLessThanOrEqual(bound.right + 0.5);
+      expect(box.bottom, selector).toBeLessThanOrEqual(bound.bottom + 0.5);
+    }
   }
 }
 
