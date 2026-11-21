@@ -185,8 +185,9 @@ test('a late start still gets the whole flight', async ({ page }) => {
     await new Promise((resolve) => setTimeout(resolve, 3500));
     await route.continue();
   });
-  await page.goto('/');
-  await page.waitForFunction(() => window.started.length > 0);
+  // Not waiting for the page's load event, which could come after the flight.
+  await page.goto('/', { waitUntil: 'commit' });
+  await page.waitForFunction(() => window.started?.length > 0);
   await page.waitForTimeout(800);
   await expect(page.locator('#launch')).toHaveCount(1);
   await expect(page.locator('#launch')).toHaveCount(0, { timeout: 2000 });
