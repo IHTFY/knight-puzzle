@@ -756,15 +756,17 @@ td.slow-split {
   grid-template-columns: 44px minmax(44px, max-content);
   gap: 5px;
 }
-/* As tall as its row, or taller where larger text wraps its label. */
+/* As tall as its row, or taller where larger text wraps its label and
+   moves the route's length to a line of its own. */
 .route-button {
   height: auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 0 8px;
   font-weight: 500;
-  padding: 0 9px;
+  padding: 4px 9px;
 }
 .route-button[aria-pressed='true'] {
   color: #e0c598;
@@ -864,6 +866,11 @@ td {
   }
   .panel button:focus-visible {
     outline-offset: -3px;
+  }
+  /* The time breaks only where even a row of its own is too narrow for it. */
+  .timer .number {
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 }
 /* Too short for the panel at its full spacing. */

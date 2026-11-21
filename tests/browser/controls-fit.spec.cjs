@@ -20,3 +20,9 @@ test('a timer whose digits outgrow its card moves to a row of its own', async ({
   await expectTextInside(page, '#timerDisplay', '#showTimer');
   await expectInView(page, ['.board-wrap', ...CONTROLS]);
 });
+
+test('on a phone on its side, a time too wide for the panel breaks onto a second line', async ({ page }) => {
+  await open(page, 568, 320);
+  await page.addStyleTag({ content: '#timerDisplay { font-size: 64px; }' });
+  await expectTextInside(page, '#timerDisplay', '#showTimer');
+});

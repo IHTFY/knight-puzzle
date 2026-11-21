@@ -16,10 +16,12 @@ async function expectInView(page, selectors) {
     const panel = document.querySelector('.panel');
     return selectors.map((selector) => {
       const element = document.querySelector(selector);
-      return { selector, box: element.getBoundingClientRect().toJSON(), bounds: panel.contains(element) ? [view, panel.getBoundingClientRect().toJSON()] : [view] };
+      const visible = element.checkVisibility({ visibilityProperty: true, opacityProperty: true });
+      return { selector, visible, box: element.getBoundingClientRect().toJSON(), bounds: panel.contains(element) ? [view, panel.getBoundingClientRect().toJSON()] : [view] };
     });
   }, selectors);
-  for (const { selector, box, bounds } of boxes) {
+  for (const { selector, visible, box, bounds } of boxes) {
+    expect(visible, selector).toBe(true);
     for (const bound of bounds) {
       expect(box.left, selector).toBeGreaterThanOrEqual(bound.left - 0.5);
       expect(box.top, selector).toBeGreaterThanOrEqual(bound.top - 0.5);

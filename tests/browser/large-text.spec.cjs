@@ -44,3 +44,18 @@ test('a short upright window keeps a quarter of its height for the board and scr
     await expectInView(page, ['#rewind', '#reset', '#statsButton']);
   }).toPass({ timeout: 5000 });
 });
+
+test('the route length moves to a second line instead of spilling out of its button', async ({ page }) => {
+  for (const [width, height] of [[320, 568], [568, 320]]) {
+    await open(page, width, height);
+    await page.locator('#showRoute').click();
+    await expect(page.locator('#routeCount')).not.toBeEmpty();
+    for (const part of ['.route-icon', '#showRoute span', '#routeCount']) {
+      const inner = await page.locator(part).boundingBox();
+      const outer = await page.locator('#showRoute').boundingBox();
+      expect(inner.x, part).toBeGreaterThanOrEqual(outer.x - 0.5);
+      expect(inner.x + inner.width, part).toBeLessThanOrEqual(outer.x + outer.width + 0.5);
+      expect(inner.y + inner.height, part).toBeLessThanOrEqual(outer.y + outer.height + 0.5);
+    }
+  }
+});

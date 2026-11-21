@@ -1,7 +1,7 @@
 'use strict';
 
 // Content hash of FILES_TO_CACHE; `npm run stamp` updates it and `npm test` fails if it is stale.
-const CACHE_VERSION = '9eb4305203be';
+const CACHE_VERSION = '28188465c234';
 const CACHE_PREFIX = 'knight-puzzle-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const FILES_TO_CACHE = [
