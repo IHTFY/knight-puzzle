@@ -1311,3 +1311,47 @@ if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
     })
     .catch((err) => console.error('Service worker not registered.', err));
 }
+
+// Installed-app launch: the helmet from the launch screen makes a knight's move into the header
+// logo, the long leg first and then the short one, while the launch screen fades to show the board.
+globalThis.launchExit?.((overlay) => {
+  const icon = document.getElementById('launch-icon');
+  const logo = document.querySelector('.brand img');
+  const from = icon.getBoundingClientRect();
+  const to = logo.getBoundingClientRect();
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+  const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+  const corner = Math.abs(dy) >= Math.abs(dx) ? [0, dy] : [dx, 0];
+  // Lifted in place like a picked-up piece while Chrome still shows or crossfades from its launch
+  // screen (about 250 ms on a phone), then shrinking evenly along both legs.
+  const lift = 1.12;
+  const scale = to.width / from.width;
+  const longLeg = Math.max(Math.abs(dx), Math.abs(dy));
+  const midScale = lift + ((scale - lift) * longLeg) / (Math.abs(dx) + Math.abs(dy) || 1);
+  const duration = 1100;
+  return [
+    overlay.animate(
+      { backgroundColor: ['#070f20', 'rgb(7 15 32 / 0)'] },
+      { duration: 700, delay: 250, easing: 'ease-in', fill: 'forwards' },
+    ),
+    document
+      .getElementById('launch-name')
+      .animate({ opacity: [1, 0] }, { duration: 150, fill: 'forwards' }),
+    icon.animate(
+      [
+        { transform: 'none', borderRadius: '0%', easing: 'ease-in-out' },
+        { transform: `scale(${lift})`, offset: 0.3, easing: 'cubic-bezier(0.45, 0, 0.55, 1)' },
+        {
+          transform: `translate(${corner[0]}px, ${corner[1]}px) scale(${midScale})`,
+          offset: 0.66,
+          easing: 'cubic-bezier(0.45, 0, 0.2, 1)',
+        },
+        // The logo's own corners: rx 96 of 512.
+        { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, borderRadius: '18.75%' },
+      ],
+      { duration, fill: 'forwards' },
+    ),
+    // The real logo stays hidden until the helmet lands on it.
+    logo.animate({ opacity: [0, 0] }, { duration }),
+  ];
+});
