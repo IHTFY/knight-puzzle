@@ -1,0 +1,33 @@
+const { test, expect } = require('@playwright/test');
+const { CONTROLS, open, expectInView, expectTextInside } = require('./fit.cjs');
+
+// Chrome's minimum font size stands in for a phone's larger text setting.
+test.use({ launchOptions: { args: ['--blink-settings=minimumFontSize=22'] } });
+
+test.beforeEach(async ({ context }) => {
+  // Nothing outside the local server is requested: no real ad, no loader.
+  await context.route(/^https?:\/\/(?!127\.0\.0\.1:8766(?:\/|$))/, (route) => route.abort());
+});
+
+test('a narrow phone keeps each label inside its control', async ({ page }) => {
+  await open(page, 320, 568);
+  await expectInView(page, ['.board-wrap', ...CONTROLS]);
+  await expectTextInside(page, '#showTarget .label', '#showTarget');
+  await expectTextInside(page, '#showTarget .number', '#showTarget');
+  await expectTextInside(page, '#timerDisplay', '#showTimer');
+  await expectTextInside(page, '.metric .label', '.metric');
+  await expectTextInside(page, '#reset', '#reset');
+  await expectTextInside(page, '#showRoute span', '#showRoute');
+  await expectTextInside(page, '#statsButton', '#statsButton');
+});
+
+test('a short phone on its side reaches Rewind, Reset and Stats by scrolling the controls', async ({ page }) => {
+  await open(page, 320, 568);
+  await page.locator('.square-g6').click();
+  await page.setViewportSize({ width: 568, height: 320 });
+  await expectInView(page, ['.board-wrap']);
+  await page.locator('.panel').hover();
+  await page.mouse.wheel(0, 400);
+  await expect(async () => expectInView(page, ['#rewind', '#reset', '#statsButton'])).toPass();
+  await expect(page.locator('#moveCount')).toHaveText('1');
+});

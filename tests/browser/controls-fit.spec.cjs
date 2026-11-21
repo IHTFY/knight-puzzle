@@ -1,0 +1,15 @@
+const { test, expect } = require('@playwright/test');
+const { CONTROLS, open, expectInView } = require('./fit.cjs');
+
+test.beforeEach(async ({ context }) => {
+  // Nothing outside the local server is requested: no real ad, no loader.
+  await context.route(/^https?:\/\/(?!127\.0\.0\.1:8766(?:\/|$))/, (route) => route.abort());
+});
+
+test('a phone on its side shows every control without scrolling', async ({ page }) => {
+  await open(page, 320, 568);
+  await page.locator('.square-g6').click();
+  await page.setViewportSize({ width: 568, height: 320 });
+  await expectInView(page, ['.board-wrap', ...CONTROLS]);
+  await expect(page.locator('#moveCount')).toHaveText('1');
+});
