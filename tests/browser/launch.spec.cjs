@@ -99,7 +99,7 @@ test('a tap skips to the end', async ({ page }) => {
 
 for (const [name, act] of [
   ['a key', (page) => page.keyboard.press('Tab')],
-  ['a resize, which would move the landing spot,', (page) => page.setViewportSize({ width: 800, height: 360 })],
+  ['a resize that moves the logo', (page) => page.setViewportSize({ width: 800, height: 360 })],
 ]) {
   test(`${name} skips to the end`, async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 722 });
@@ -111,6 +111,17 @@ for (const [name, act] of [
     expect(await launching(page)).toBe(false);
   });
 }
+
+test('a resize that leaves the logo in place keeps the flight', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 722 });
+  await installedApp(page, { hold: 'start' });
+  await page.goto('/', { waitUntil: 'commit' });
+  await page.waitForFunction(() => window.launchHeld);
+  await page.setViewportSize({ width: 360, height: 700 });
+  // Only a skip would take the paused copy away.
+  await page.waitForTimeout(300);
+  await expect(page.locator('#launch')).toHaveCount(1);
+});
 
 // A rejected ad-free token brings the rail back (the class goes); a valid one leaves it hidden.
 for (const { width, height, moves } of [
@@ -136,14 +147,17 @@ for (const { width, height, moves } of [
   });
 }
 
-test('a fallback that fires before the copy is parsed leaves the game alone', async ({ page }) => {
+test('slow game scripts leave the copy up, and a fallback that ends it leaves the game alone', async ({ page }) => {
   await installedApp(page);
-  // Holds the first head script after the launch script past the 4 s fallback.
+  // The game's scripts arrive after the 4 s fallback.
   await page.route('**/jquery.min.js', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 4500));
     await route.continue();
   });
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'commit' });
+  // They don't hold up the copy.
+  await expect(page.locator('#launch')).toBeVisible({ timeout: 2000 });
+  await page.waitForLoadState('load');
   expect(await page.evaluate(() => window.started)).toEqual([]);
   await expect(page.locator('#launch')).toHaveCount(0);
   await expect(page.locator('.brand img')).toHaveCSS('opacity', '1');

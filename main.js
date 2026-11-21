@@ -1354,16 +1354,21 @@ globalThis.launchExit?.((overlay) => {
     // The real logo stays hidden until the helmet lands on it.
     logo.animate({ opacity: [0, 0] }, { duration }),
   ];
-  // The ad rail coming back mid-flight (a stored ad-free token the loader rejects) can move the
-  // logo, so the flight skips to the end if it does.
-  const moved = new MutationObserver(() => {
+  // A resize or the ad rail coming back mid-flight (a stored ad-free token the loader rejects) can
+  // move the logo, so the flight skips to the end if it does.
+  const check = () => {
     const now = logo.getBoundingClientRect();
     if (now.left !== to.left || now.top !== to.top || now.width !== to.width) {
       animations.forEach((animation) => animation.finish());
     }
-  });
+  };
+  const moved = new MutationObserver(check);
   moved.observe(document.documentElement, { attributeFilter: ['class'] });
-  const stop = () => moved.disconnect();
+  addEventListener('resize', check);
+  const stop = () => {
+    moved.disconnect();
+    removeEventListener('resize', check);
+  };
   Promise.all(animations.map((animation) => animation.finished)).then(stop, stop);
   return animations;
 });

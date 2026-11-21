@@ -85,13 +85,13 @@
         let animations;
         let skipped = false;
         let ended = false;
-        // A tap or key skips to the end, and so does a resize, which would move the landing spot.
+        // A tap or key skips to the end.
         // Before the exit starts, the copy goes as soon as the game is ready.
         const skip = () => {
           skipped = true;
           animations?.forEach((a) => a.finish());
         };
-        const skippers = ['pointerdown', 'keydown', 'resize'];
+        const skippers = ['pointerdown', 'keydown'];
         const end = () => {
           ended = true;
           clearTimeout(fallback);
@@ -134,8 +134,8 @@
       })();
     </script>
     <link rel="stylesheet" href="styles.css" />
-    <script src="jquery.min.js"></script>
-    <script src="chessboard.js"></script>
+    <script defer src="jquery.min.js"></script>
+    <script defer src="chessboard.js"></script>
     <script defer src="main.js"></script>
   </head>
   <body>
