@@ -7,7 +7,8 @@ test.beforeEach(async ({ context }) => {
 
 // Playwright has no display-mode emulation, so the page sees itself as the installed app.
 // The page records whether it ever entered the launch state and every animation it starts.
-// With `hold`, the exit's animations are paused, at their 'start' or 'end', instead of playing.
+// With `hold`, the exit's animations are paused, at their 'start' or 'end', instead of playing;
+// tests that hold it wait for that, not for the page's load event, which a 2 s fallback could beat.
 async function installedApp(page, { hold, mode = 'standalone' } = {}) {
   await page.addInitScript(({ hold, mode }) => {
     const real = window.matchMedia.bind(window);
@@ -58,7 +59,7 @@ for (const size of [{ width: 360, height: 722 }, { width: 800, height: 360 }]) {
   test(`the helmet lands on the header logo at ${size.width}x${size.height}`, async ({ page }) => {
     await page.setViewportSize(size);
     await installedApp(page, { hold: 'end' });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'commit' });
     await page.waitForFunction(() => window.launchHeld);
     const [icon, logo] = await page.evaluate(() =>
       ['#launch-icon', '.brand img'].map((selector) => {
@@ -87,7 +88,7 @@ test('the launch plays once, then leaves the game as a tab shows it', async ({ p
 test('a tap skips to the end', async ({ page }) => {
   // Paused at the start, the exit ends only through the tap.
   await installedApp(page, { hold: 'start' });
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'commit' });
   await page.waitForFunction(() => window.launchHeld);
   await page.locator('#launch').dispatchEvent('pointerdown');
   // Well before the 4 s fallback would take the copy away.
@@ -103,7 +104,7 @@ for (const [name, act] of [
   test(`${name} skips to the end`, async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 722 });
     await installedApp(page, { hold: 'start' });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'commit' });
     await page.waitForFunction(() => window.launchHeld);
     await act(page);
     await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
@@ -120,7 +121,7 @@ for (const { width, height, moves } of [
     await page.setViewportSize({ width, height });
     await page.addInitScript(() => localStorage.setItem('ihtfy-ad-free', 'token'));
     await installedApp(page, { hold: 'start' });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'commit' });
     await page.waitForFunction(() => window.launchHeld);
     // Only a skip would take the paused copy away.
     await page.waitForTimeout(300);
@@ -195,7 +196,7 @@ test('a late start still gets the whole flight', async ({ page }) => {
 
 test('a stalled exit still ends, and leaves the logo showing', async ({ page }) => {
   await installedApp(page, { hold: 'start' });
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'commit' });
   await page.waitForFunction(() => window.launchHeld);
   await expect(page.locator('#launch')).toHaveCount(0, { timeout: 6000 });
   expect(await launching(page)).toBe(false);
