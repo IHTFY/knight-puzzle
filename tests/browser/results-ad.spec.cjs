@@ -275,3 +275,17 @@ for (const [width, height, shown] of [[740, 360, true], [844, 390, true], [568, 
     expect(await page.evaluate(() => window.__ads?.length ?? 0)).toBe(shown ? 1 : 0);
   });
 }
+
+test('an ad left out at the first view takes the size the window has when it shows', async ({ page }) => {
+  await page.setViewportSize({ width: 568, height: 320 });
+  await page.goto('/?adtest=on');
+  await page.keyboard.press('Shift');
+  await finishTour(page);
+  await expect(page.locator('.ad')).toBeHidden();
+  await page.setViewportSize({ width: 360, height: 740 });
+  await expect(page.locator('#adBox ins')).toBeVisible();
+  const box = await page.locator('#adBox').boundingBox();
+  expect([box.width, box.height]).toEqual([300, 250]);
+  expect(await page.evaluate(() => window.__ads.map((ad) => ad.size))).toEqual(['300x250']);
+  await expectAllInView(page, 360, 740);
+});

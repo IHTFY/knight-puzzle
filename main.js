@@ -102,21 +102,13 @@ function showScreenAd(name, screen, key) {
   waitingScreen = document.documentElement.classList.contains('ad-free') ? { name, screen, key } : null;
   if (waitingScreen) return;
   const box = renewAdBox(screen.querySelector('.ad-box'));
-  box.removeAttribute('style'); // The last ad's size, kept for its own screen visit.
-  box.parentElement.hidden = false; // Left out on the last visit, so it has no size to measure.
   box.dataset.adSlot = AD_SLOT;
-  const size = sizeOf(box);
-  if (!size) return;
-  box.dataset.adSize = size;
-  // The loader's unit keeps this size, so the box does too if the window turns before the screen closes.
-  const [width, height] = size.split('x');
-  Object.assign(box.style, { width: `${width}px`, height: `${height}px`, minHeight: `${height}px` });
   screenAd = { screen, box, key, asked: false, swaps: 0 };
   fitScreenAd();
 }
 
 /**
- * Leaves the results ad, its label and its link out while the screen can't hold
+ * Leaves the results ad, its label and its link out while the window can't hold
  * them with the result and its buttons, as on a phone turned on its side, and
  * brings them back once it can. The ad is asked for when its box first shows,
  * and a placed ad stays in its box, so none is asked for twice. The loader
@@ -126,14 +118,24 @@ function showScreenAd(name, screen, key) {
  */
 function fitScreenAd() {
   if (!screenAd) return;
-  const ad = screenAd.box.parentElement;
+  const { screen, box } = screenAd;
+  const ad = box.parentElement;
   ad.hidden = false;
+  // Until the loader has the box, it takes the size the stylesheet gives this
+  // window. The loader's unit keeps its size after that, so the box does too.
+  if (!screenAd.asked) {
+    box.removeAttribute('style');
+    box.dataset.adSize = sizeOf(box);
+    const [width, height] = box.dataset.adSize.split('x');
+    if (height) Object.assign(box.style, { width: `${width}px`, height: `${height}px`, minHeight: `${height}px` });
+  }
   ad.hidden =
-    screenAd.screen.scrollHeight > screenAd.screen.clientHeight ||
-    screenAd.screen.scrollWidth > screenAd.screen.clientWidth;
+    !box.offsetWidth ||
+    screen.scrollHeight > screen.clientHeight ||
+    screen.scrollWidth > screen.clientWidth;
   if (!ad.hidden && !screenAd.asked) {
     screenAd.asked = true;
-    const { box, key, swaps } = screenAd;
+    const { key, swaps } = screenAd;
     // The loader keeps a key it is still placing, so a swapped box gets a key of its own.
     showAd(box, swaps ? `${key}/${swaps}` : key);
   } else if (ad.hidden && screenAd.asked && !screenAd.box.querySelector('ins')) {
