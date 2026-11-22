@@ -146,6 +146,24 @@ test.describe('on a touch screen', () => {
     await page.waitForTimeout(300);
     await expect(control).toHaveAttribute('aria-pressed', before);
   });
+
+  test('a key pressed before the finger lifts keeps the guard', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 722 });
+    await installedApp(page, { hold: 'start' });
+    await page.goto('/', { waitUntil: 'commit' });
+    await page.waitForFunction(() => window.launchHeld);
+    const control = page.locator('#queenVision');
+    const before = await control.getAttribute('aria-pressed');
+    const { x, y, width, height } = await control.boundingBox();
+    const point = { x: x + width / 2, y: y + height / 2 };
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+    await page.keyboard.press('Shift');
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(300);
+    await expect(control).toHaveAttribute('aria-pressed', before);
+  });
 });
 
 test('a held press that skips leaves the next click alone', async ({ page }) => {
@@ -179,6 +197,23 @@ test('a held press that skips leaves the next key alone', async ({ page }) => {
   await page.mouse.up();
   await control.focus();
   await page.keyboard.press('Enter');
+  await expect(control).not.toHaveAttribute('aria-pressed', before);
+});
+
+test('a held press that skips leaves a click from assistive tech alone', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 722 });
+  await installedApp(page, { hold: 'start' });
+  await page.goto('/', { waitUntil: 'commit' });
+  await page.waitForFunction(() => window.launchHeld);
+  const control = page.locator('#queenVision');
+  const before = await control.getAttribute('aria-pressed');
+  const { x, y, width, height } = await control.boundingBox();
+  await page.mouse.move(x + width / 2, y + height / 2);
+  await page.mouse.down();
+  await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+  await page.mouse.up();
+  // A screen reader's activation sends a click with no press before it.
+  await control.evaluate((button) => button.click());
   await expect(control).not.toHaveAttribute('aria-pressed', before);
 });
 

@@ -92,23 +92,29 @@
           event.preventDefault();
           event.stopPropagation();
           // A touch's click comes once the copy is gone, aimed at whatever is under the finger.
-          // A press that ends without a click (a held mouse button) leaves the next press or key alone.
+          // The guard lasts until that click, the next press, or a moment after the finger lifts,
+          // since a press that ends without a click (a held mouse button) must leave the next one alone.
           // Each press has its own guard, so an earlier press's cleanup can't drop a later one's.
           if (event.type === 'pointerdown' && event.isPrimary && event.button === 0) {
-            const spares = ['pointercancel', 'pointerdown', 'keydown'];
+            let timer;
+            // Clicks from a key or assistive tech have no pointer behind them (detail 0) and go through.
             const eat = (click) => {
+              if (click.detail === 0) return;
               click.preventDefault();
               click.stopImmediatePropagation();
               spare();
             };
+            const pressed = (down) => down.isPrimary && spare();
+            const cancelled = (cancel) => cancel.pointerId === event.pointerId && spare();
+            const lifted = (up) => {
+              if (up.pointerId === event.pointerId) timer = setTimeout(spare, 1000);
+            };
+            const listeners = { click: eat, pointerdown: pressed, pointercancel: cancelled, pointerup: lifted };
             const spare = () => {
               clearTimeout(timer);
-              removeEventListener('click', eat, true);
-              spares.forEach((type) => removeEventListener(type, spare, true));
+              Object.entries(listeners).forEach(([type, listener]) => removeEventListener(type, listener, true));
             };
-            const timer = setTimeout(spare, 1000);
-            addEventListener('click', eat, true);
-            spares.forEach((type) => addEventListener(type, spare, true));
+            Object.entries(listeners).forEach(([type, listener]) => addEventListener(type, listener, true));
           }
           skipped = true;
           animations?.forEach((a) => a.finish());
