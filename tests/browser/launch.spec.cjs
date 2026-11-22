@@ -110,6 +110,8 @@ test.describe('on a touch screen', () => {
     const { x, y, width, height } = await control.boundingBox();
     await page.touchscreen.tap(x + width / 2, y + height / 2);
     await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+    // The skip still counts as the player's first input.
+    expect(await page.evaluate(() => Promise.race([firstInput.then(() => true), new Promise((r) => setTimeout(r, 100, false))]))).toBe(true);
     // The touch's click has had time to land.
     await page.waitForTimeout(300);
     await expect(control).toHaveAttribute('aria-pressed', before);
@@ -117,6 +119,23 @@ test.describe('on a touch screen', () => {
     await page.touchscreen.tap(x + width / 2, y + height / 2);
     await expect(control).not.toHaveAttribute('aria-pressed', before);
   });
+});
+
+test('a held press that skips leaves the next click alone', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 722 });
+  await installedApp(page, { hold: 'start' });
+  await page.goto('/', { waitUntil: 'commit' });
+  await page.waitForFunction(() => window.launchHeld);
+  const control = page.locator('#queenVision');
+  const before = await control.getAttribute('aria-pressed');
+  const { x, y, width, height } = await control.boundingBox();
+  await page.mouse.move(x + width / 2, y + height / 2);
+  // The press outlasts the copy, so its release makes no click.
+  await page.mouse.down();
+  await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+  await page.mouse.up();
+  await page.mouse.click(x + width / 2, y + height / 2);
+  await expect(control).not.toHaveAttribute('aria-pressed', before);
 });
 
 for (const [name, act] of [

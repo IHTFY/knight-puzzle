@@ -87,14 +87,17 @@
         let ended = false;
         // A tap or key only skips to the end: nothing behind the copy reacts.
         // Before the exit starts, the copy goes as soon as the game is ready.
+        // Other listeners on window itself still run, such as the game's wait for a first input.
         const skip = (event) => {
           event.preventDefault();
-          event.stopImmediatePropagation();
+          event.stopPropagation();
           // A touch's click comes once the copy is gone, aimed at whatever is under the finger.
+          // A press that ends without a click (a held mouse button) leaves the next press alone.
           if (event.type === 'pointerdown' && event.isPrimary && event.button === 0) {
             const spare = () => removeEventListener('click', eat, true);
             addEventListener('click', eat, { capture: true, once: true });
             addEventListener('pointercancel', spare, { once: true });
+            addEventListener('pointerdown', spare, { capture: true, once: true });
             setTimeout(spare, 1000);
           }
           skipped = true;
