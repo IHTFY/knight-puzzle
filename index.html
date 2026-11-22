@@ -92,17 +92,19 @@
           event.preventDefault();
           event.stopPropagation();
           // A touch's click comes once the copy is gone, aimed at whatever is under the finger.
-          // The guard lasts until that click, the next press, or a moment after the finger lifts,
+          // The guard lasts until that click, the pointer's next press or cancel, or a second after it lifts,
           // since a press that ends without a click (a held mouse button) must leave the next one alone.
           // Each press has its own guard, so an earlier press's cleanup can't drop a later one's.
           if (event.type === 'pointerdown' && event.isPrimary && event.button === 0) {
             let timer;
             let released = false;
+            let pressedSince = false;
             // Only this pointer's click is eaten: other pointers, keys, and assistive tech go through.
             // A click carries its pointer's id where the browser sets one, and -1 when no pointer made it.
+            // Without one, only a click after this pointer lifts and before any other press can be its own.
             const ours = (click) => {
               if (click.pointerId === event.pointerId) return true;
-              if (click.pointerId > -1) return false;
+              if (click.pointerId > -1 || !released || pressedSince) return false;
               return click.pointerType ? click.pointerType === event.pointerType : click.detail > 0;
             };
             const eat = (click) => {
@@ -111,7 +113,10 @@
               click.stopImmediatePropagation();
               spare();
             };
-            const pressed = (down) => (released || down.pointerId === event.pointerId) && spare();
+            const pressed = (down) => {
+              if (down.pointerId === event.pointerId) spare();
+              else if (released) pressedSince = true;
+            };
             const cancelled = (cancel) => cancel.pointerId === event.pointerId && spare();
             const lifted = (up) => {
               if (up.pointerId !== event.pointerId) return;

@@ -184,7 +184,8 @@ test.describe('on a touch screen', () => {
     await expect(control).not.toHaveAttribute('aria-pressed', before);
   });
 
-  test('a touch click that carries no pointer id or count is still eaten', async ({ page }) => {
+  // Each test touches down on the control under the copy, which ends the held launch.
+  async function touchDown(page) {
     await page.setViewportSize({ width: 360, height: 722 });
     await installedApp(page, { hold: 'start' });
     await page.goto('/', { waitUntil: 'commit' });
@@ -192,16 +193,67 @@ test.describe('on a touch screen', () => {
     const control = page.locator('#queenVision');
     const before = await control.getAttribute('aria-pressed');
     const { x, y, width, height } = await control.boundingBox();
+    const point = { x: x + width / 2, y: y + height / 2 };
     const cdp = await page.context().newCDPSession(page);
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x + width / 2, y: y + height / 2 }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
     await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
-    // Older Chromium sent a touch's click like this.
-    await control.evaluate((button) =>
-      button.dispatchEvent(
-        new PointerEvent('click', { bubbles: true, cancelable: true, pointerId: -1, pointerType: 'touch', detail: 0 }),
+    return { control, before, point, cdp };
+  }
+
+  // Stands in for browsers that send a touch's click late, or without its pointer's id:
+  // the real click is stopped before the page sees it, and the test sends its own.
+  async function catchTouchClicks(page) {
+    await page.addInitScript(() =>
+      addEventListener(
+        'click',
+        (click) => {
+          if (!click.isTrusted || click.pointerType !== 'touch') return;
+          click.preventDefault();
+          click.stopImmediatePropagation();
+          window.caught = { target: click.target, pointerId: click.pointerId };
+        },
+        true,
       ),
     );
+  }
+
+  for (const [browser, shape] of [
+    ['older Chromium', { type: 'PointerEvent', init: { pointerId: -1, pointerType: 'touch', detail: 0 } }],
+    ['Safari', { type: 'MouseEvent', init: { detail: 1 } }],
+  ]) {
+    test(`a tap's click without its pointer's id, as ${browser} sends it, is still eaten`, async ({ page }) => {
+      await catchTouchClicks(page);
+      const { control, before, cdp } = await touchDown(page);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForFunction(() => window.caught);
+      await page.evaluate(({ type, init }) => {
+        window.caught.target.dispatchEvent(new window[type]('click', { bubbles: true, cancelable: true, ...init }));
+      }, shape);
+      await expect(control).toHaveAttribute('aria-pressed', before);
+    });
+  }
+
+  test("a second finger down before the tap's click arrives keeps the guard", async ({ page }) => {
+    await catchTouchClicks(page);
+    const { control, before, point, cdp } = await touchDown(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForFunction(() => window.caught);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    // The first tap's click, arriving late.
+    await page.evaluate(() => {
+      const { target, pointerId } = window.caught;
+      target.dispatchEvent(new PointerEvent('click', { bubbles: true, cancelable: true, pointerId, pointerType: 'touch', detail: 1 }));
+    });
     await expect(control).toHaveAttribute('aria-pressed', before);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+  });
+
+  test("a click without a pointer id while the finger is down isn't the finger's", async ({ page }) => {
+    const { control, before, cdp } = await touchDown(page);
+    await control.evaluate((button) =>
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 })),
+    );
+    await expect(control).not.toHaveAttribute('aria-pressed', before);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
   });
 });
