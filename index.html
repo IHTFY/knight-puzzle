@@ -85,11 +85,24 @@
         let animations;
         let skipped = false;
         let ended = false;
-        // A tap or key skips to the end.
+        // A tap or key only skips to the end: nothing behind the copy reacts.
         // Before the exit starts, the copy goes as soon as the game is ready.
-        const skip = () => {
+        const skip = (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          // A touch's click comes once the copy is gone, aimed at whatever is under the finger.
+          if (event.type === 'pointerdown' && event.isPrimary && event.button === 0) {
+            const spare = () => removeEventListener('click', eat, true);
+            addEventListener('click', eat, { capture: true, once: true });
+            addEventListener('pointercancel', spare, { once: true });
+            setTimeout(spare, 1000);
+          }
           skipped = true;
           animations?.forEach((a) => a.finish());
+        };
+        const eat = (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
         };
         const skippers = ['pointerdown', 'keydown'];
         const end = () => {

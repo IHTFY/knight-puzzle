@@ -97,6 +97,28 @@ test('a tap skips to the end', async ({ page }) => {
   await expect(page.locator('.brand img')).toHaveCSS('opacity', '1');
 });
 
+test.describe('on a touch screen', () => {
+  test.use({ hasTouch: true });
+
+  test('a tap that skips leaves the control under the finger alone, and the next tap works', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 722 });
+    await installedApp(page, { hold: 'start' });
+    await page.goto('/', { waitUntil: 'commit' });
+    await page.waitForFunction(() => window.launchHeld);
+    const control = page.locator('#queenVision');
+    const before = await control.getAttribute('aria-pressed');
+    const { x, y, width, height } = await control.boundingBox();
+    await page.touchscreen.tap(x + width / 2, y + height / 2);
+    await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+    // The touch's click has had time to land.
+    await page.waitForTimeout(300);
+    await expect(control).toHaveAttribute('aria-pressed', before);
+
+    await page.touchscreen.tap(x + width / 2, y + height / 2);
+    await expect(control).not.toHaveAttribute('aria-pressed', before);
+  });
+});
+
 for (const [name, act] of [
   ['a key', (page) => page.keyboard.press('Tab')],
   ['a resize that moves the logo', (page) => page.setViewportSize({ width: 800, height: 360 })],
