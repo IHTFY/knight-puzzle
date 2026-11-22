@@ -164,6 +164,46 @@ test.describe('on a touch screen', () => {
     await page.waitForTimeout(300);
     await expect(control).toHaveAttribute('aria-pressed', before);
   });
+
+  test('a mouse click while the finger is down works, and the finger still lifts without one', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 722 });
+    await installedApp(page, { hold: 'start' });
+    await page.goto('/', { waitUntil: 'commit' });
+    await page.waitForFunction(() => window.launchHeld);
+    const control = page.locator('#queenVision');
+    const before = await control.getAttribute('aria-pressed');
+    const { x, y, width, height } = await control.boundingBox();
+    const point = { x: x + width / 2, y: y + height / 2 };
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+    await page.mouse.click(point.x, point.y);
+    await expect(control).not.toHaveAttribute('aria-pressed', before);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(300);
+    await expect(control).not.toHaveAttribute('aria-pressed', before);
+  });
+
+  test('a touch click that carries no pointer id or count is still eaten', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 722 });
+    await installedApp(page, { hold: 'start' });
+    await page.goto('/', { waitUntil: 'commit' });
+    await page.waitForFunction(() => window.launchHeld);
+    const control = page.locator('#queenVision');
+    const before = await control.getAttribute('aria-pressed');
+    const { x, y, width, height } = await control.boundingBox();
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x + width / 2, y: y + height / 2 }] });
+    await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+    // Older Chromium sent a touch's click like this.
+    await control.evaluate((button) =>
+      button.dispatchEvent(
+        new PointerEvent('click', { bubbles: true, cancelable: true, pointerId: -1, pointerType: 'touch', detail: 0 }),
+      ),
+    );
+    await expect(control).toHaveAttribute('aria-pressed', before);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+  });
 });
 
 test('a held press that skips leaves the next click alone', async ({ page }) => {
@@ -179,6 +219,7 @@ test('a held press that skips leaves the next click alone', async ({ page }) => 
   await page.mouse.down();
   await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
   await page.mouse.up();
+  await expect(control).toHaveAttribute('aria-pressed', before);
   await page.mouse.click(x + width / 2, y + height / 2);
   await expect(control).not.toHaveAttribute('aria-pressed', before);
 });
@@ -195,6 +236,7 @@ test('a held press that skips leaves the next key alone', async ({ page }) => {
   await page.mouse.down();
   await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
   await page.mouse.up();
+  await expect(control).toHaveAttribute('aria-pressed', before);
   await control.focus();
   await page.keyboard.press('Enter');
   await expect(control).not.toHaveAttribute('aria-pressed', before);
@@ -212,6 +254,7 @@ test('a held press that skips leaves a click from assistive tech alone', async (
   await page.mouse.down();
   await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
   await page.mouse.up();
+  await expect(control).toHaveAttribute('aria-pressed', before);
   // A screen reader's activation sends a click with no press before it.
   await control.evaluate((button) => button.click());
   await expect(control).not.toHaveAttribute('aria-pressed', before);

@@ -97,17 +97,26 @@
           // Each press has its own guard, so an earlier press's cleanup can't drop a later one's.
           if (event.type === 'pointerdown' && event.isPrimary && event.button === 0) {
             let timer;
-            // Clicks from a key or assistive tech have no pointer behind them (detail 0) and go through.
+            let released = false;
+            // Only this pointer's click is eaten: other pointers, keys, and assistive tech go through.
+            // A click carries its pointer's id where the browser sets one, and -1 when no pointer made it.
+            const ours = (click) => {
+              if (click.pointerId === event.pointerId) return true;
+              if (click.pointerId > -1) return false;
+              return click.pointerType ? click.pointerType === event.pointerType : click.detail > 0;
+            };
             const eat = (click) => {
-              if (click.detail === 0) return;
+              if (!ours(click)) return;
               click.preventDefault();
               click.stopImmediatePropagation();
               spare();
             };
-            const pressed = (down) => down.isPrimary && spare();
+            const pressed = (down) => (released || down.pointerId === event.pointerId) && spare();
             const cancelled = (cancel) => cancel.pointerId === event.pointerId && spare();
             const lifted = (up) => {
-              if (up.pointerId === event.pointerId) timer = setTimeout(spare, 1000);
+              if (up.pointerId !== event.pointerId) return;
+              released = true;
+              timer = setTimeout(spare, 1000);
             };
             const listeners = { click: eat, pointerdown: pressed, pointercancel: cancelled, pointerup: lifted };
             const spare = () => {
