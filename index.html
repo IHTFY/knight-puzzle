@@ -92,20 +92,26 @@
           event.preventDefault();
           event.stopPropagation();
           // A touch's click comes once the copy is gone, aimed at whatever is under the finger.
-          // A press that ends without a click (a held mouse button) leaves the next press alone.
+          // A press that ends without a click (a held mouse button) leaves the next press or key alone.
+          // Each press has its own guard, so an earlier press's cleanup can't drop a later one's.
           if (event.type === 'pointerdown' && event.isPrimary && event.button === 0) {
-            const spare = () => removeEventListener('click', eat, true);
-            addEventListener('click', eat, { capture: true, once: true });
-            addEventListener('pointercancel', spare, { once: true });
-            addEventListener('pointerdown', spare, { capture: true, once: true });
-            setTimeout(spare, 1000);
+            const spares = ['pointercancel', 'pointerdown', 'keydown'];
+            const eat = (click) => {
+              click.preventDefault();
+              click.stopImmediatePropagation();
+              spare();
+            };
+            const spare = () => {
+              clearTimeout(timer);
+              removeEventListener('click', eat, true);
+              spares.forEach((type) => removeEventListener(type, spare, true));
+            };
+            const timer = setTimeout(spare, 1000);
+            addEventListener('click', eat, true);
+            spares.forEach((type) => addEventListener(type, spare, true));
           }
           skipped = true;
           animations?.forEach((a) => a.finish());
-        };
-        const eat = (event) => {
-          event.preventDefault();
-          event.stopImmediatePropagation();
         };
         const skippers = ['pointerdown', 'keydown'];
         const end = () => {
