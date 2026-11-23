@@ -121,6 +121,7 @@ function fitScreenAd() {
   const { screen, box } = screenAd;
   const ad = box.parentElement;
   ad.hidden = false;
+  screen.classList.remove('crownless');
   // Until the loader has the box, it takes the size the stylesheet gives this
   // window. The loader's unit keeps its size after that, so the box does too.
   if (!screenAd.asked) {
@@ -129,10 +130,14 @@ function fitScreenAd() {
     const [width, height] = box.dataset.adSize.split('x');
     if (height) Object.assign(box.style, { width: `${width}px`, height: `${height}px`, minHeight: `${height}px` });
   }
-  ad.hidden =
+  const overflows = () =>
     !box.offsetWidth ||
     screen.scrollHeight > screen.clientHeight ||
     screen.scrollWidth > screen.clientWidth;
+  // The crown above the title gives way to the ad where the window can't hold both.
+  if (overflows()) screen.classList.add('crownless');
+  ad.hidden = overflows();
+  if (ad.hidden) screen.classList.remove('crownless');
   if (!ad.hidden && !screenAd.asked) {
     screenAd.asked = true;
     const { key, swaps } = screenAd;

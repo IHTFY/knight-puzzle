@@ -1384,13 +1384,16 @@ td.split-cell.slow-split::before {
   left: calc(100% + 4px);
   background-image: url('images/ornaments/laurel-right.webp');
 }
-/* Short windows leave out the crown, keeping the height for the ad (the 300x250 unit needs about
-   32px more than these windows have with it). */
-@media (max-height: 600px) {
+/* Short windows leave out the crown, and main.js leaves it out wherever the ad needs its height. */
+@media (max-height: 575px) {
   .results h2 {
     padding-top: 0;
     background: none;
   }
+}
+.results.crownless h2 {
+  padding-top: 0;
+  background: none;
 }
 .results p {
   margin: 0;

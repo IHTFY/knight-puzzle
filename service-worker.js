@@ -1,7 +1,7 @@
 'use strict';
 
 // Content hash of FILES_TO_CACHE; `npm run stamp` updates it and `npm test` fails if it is stale.
-const CACHE_VERSION = '20d872037029';
+const CACHE_VERSION = 'c3eb8a7af6d0';
 const CACHE_PREFIX = 'knight-puzzle-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const FILES_TO_CACHE = [
@@ -24,6 +24,12 @@ const FILES_TO_CACHE = [
   './images/ornaments/laurel-right.webp',
 ];
 const assetURLs = new Set(FILES_TO_CACHE.map(path => new URL(path, self.registration.scope).href));
+// A page from before the pieces became WebP may still be open, mid-game, when this version takes over.
+const legacyURLs = new Map([
+  ['images/pieces/wN.svg', 'images/pieces/wN.webp'],
+  ['images/pieces/wP.svg', 'images/pieces/wN.webp'],
+  ['images/pieces/bQ.svg', 'images/pieces/bQ.webp'],
+].map(([from, to]) => [new URL(from, self.registration.scope).href, new URL(to, self.registration.scope).href]));
 
 self.addEventListener('install', event => {
   // Bypass the HTTP cache so a new version never precaches stale files.
@@ -53,13 +59,14 @@ self.addEventListener('fetch', event => {
   const scope = self.registration.scope;
   const isAppNavigation = event.request.mode === 'navigate' &&
     (url.origin + url.pathname === scope || url.origin + url.pathname === new URL('index.html', scope).href);
-  const assetURL = url.origin + url.pathname;
+  const legacyURL = legacyURLs.get(url.origin + url.pathname);
+  const assetURL = legacyURL ?? url.origin + url.pathname;
   if (!isAppNavigation && !assetURLs.has(assetURL)) return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     // Keep the HTML and its assets on the same version, including while offline.
     const cached = await cache.match(isAppNavigation ? new URL('index.html', scope).href : assetURL);
-    return cached || fetch(event.request);
+    return cached || fetch(legacyURL ?? event.request);
   })());
 });
