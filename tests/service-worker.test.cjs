@@ -68,6 +68,7 @@ for (const scope of ['https://example.com/', 'https://example.com/puzzle/']) {
     assert.equal(await w.request('images/pieces/wN.svg'), 'cached:./images/pieces/wN.webp');
     assert.equal(await w.request('images/pieces/wP.svg'), 'cached:./images/pieces/wN.webp');
     assert.equal(await w.request('images/pieces/bQ.svg'), 'cached:./images/pieces/bQ.webp');
+    assert.equal(await w.request('images/icon.svg'), 'cached:./images/icon-192.png');
     assert.ok(w.requests.every(request => request.cache === 'reload'), 'precache bypasses the HTTP cache');
     assert.equal(w.stores.has('static-cache-v1'), false);
     assert.equal(w.stores.has('unrelated-app'), true);

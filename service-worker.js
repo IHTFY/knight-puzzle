@@ -1,7 +1,7 @@
 'use strict';
 
 // Content hash of FILES_TO_CACHE; `npm run stamp` updates it and `npm test` fails if it is stale.
-const CACHE_VERSION = 'c3eb8a7af6d0';
+const CACHE_VERSION = '81f7d669a03a';
 const CACHE_PREFIX = 'knight-puzzle-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const FILES_TO_CACHE = [
@@ -24,11 +24,12 @@ const FILES_TO_CACHE = [
   './images/ornaments/laurel-right.webp',
 ];
 const assetURLs = new Set(FILES_TO_CACHE.map(path => new URL(path, self.registration.scope).href));
-// A page from before the pieces became WebP may still be open, mid-game, when this version takes over.
+// A page from before the WebP pieces and PNG icons may still be open, mid-game, when this version takes over.
 const legacyURLs = new Map([
   ['images/pieces/wN.svg', 'images/pieces/wN.webp'],
   ['images/pieces/wP.svg', 'images/pieces/wN.webp'],
   ['images/pieces/bQ.svg', 'images/pieces/bQ.webp'],
+  ['images/icon.svg', 'images/icon-192.png'],
 ].map(([from, to]) => [new URL(from, self.registration.scope).href, new URL(to, self.registration.scope).href]));
 
 self.addEventListener('install', event => {

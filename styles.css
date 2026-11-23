@@ -685,7 +685,8 @@ td.slow-split {
   top: 4px;
   left: 5px;
 }
-/* Squares in the queen's line of fire keep their color under vermilion hatching. */
+/* Squares in the queen's line of fire keep their color under vermilion hatching, opaque so it
+   keeps 3:1 contrast with both square colors. */
 .queen-attacked:before {
   content: '';
   position: absolute;
@@ -693,16 +694,9 @@ td.slow-split {
   background: repeating-linear-gradient(
     135deg,
     transparent 0 4px,
-    #ee4a1f99 4px 6px
+    var(--accent) 4px 6px
   );
   pointer-events: none;
-}
-.black-3c85d.queen-attacked:before {
-  background: repeating-linear-gradient(
-    135deg,
-    transparent 0 4px,
-    #ee4a1fb3 4px 6px
-  );
 }
 /* A hollow ring in the square's opposite ink. */
 .knight-available:before {
@@ -1358,11 +1352,13 @@ td.split-cell.slow-split::before {
   text-align: center;
 }
 /* Laurels flank the title and a crown sits above it (cut from the result-card mockup). The laurels
-   hang outside the title's line box, so they add no height. */
+   sit in the title's side padding, so a title too wide for the window wraps instead of pushing
+   them out of it, and they hang below its line box, so they add no height. */
 .results h2 {
   position: relative;
+  max-width: 100%;
   margin: 0;
-  padding-top: 32px;
+  padding: 32px 38px 0;
   font-size: 26px;
   line-height: 1.2;
   background: url('images/ornaments/crown.webp') center top / 40px 26px no-repeat;
@@ -1377,11 +1373,11 @@ td.split-cell.slow-split::before {
   background: center / contain no-repeat;
 }
 .results h2::before {
-  right: calc(100% + 4px);
+  left: 0;
   background-image: url('images/ornaments/laurel-left.webp');
 }
 .results h2::after {
-  left: calc(100% + 4px);
+  right: 0;
   background-image: url('images/ornaments/laurel-right.webp');
 }
 /* Short windows leave out the crown, and main.js leaves it out wherever the ad needs its height. */
