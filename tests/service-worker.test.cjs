@@ -60,10 +60,15 @@ for (const scope of ['https://example.com/', 'https://example.com/puzzle/']) {
     await w.lifecycle('activate');
     assert.equal(await w.request('./?source=installed', 'navigate'), 'cached:./index.html');
     assert.equal(await w.request('./index.html', 'navigate'), 'cached:./index.html');
-    for (const asset of ['main.js', 'jquery.min.js', 'chessboard.js', 'styles.css', 'manifest.json', 'favicon.ico', 'images/icon.svg', 'images/apple-touch-icon.png', 'images/icon-maskable-512.png', 'images/pieces/wN.svg', 'images/pieces/bQ.svg', 'images/pieces/wP.svg']) {
+    for (const asset of ['main.js', 'jquery.min.js', 'chessboard.js', 'styles.css', 'manifest.json', 'favicon.ico', 'images/apple-touch-icon.png', 'images/icon-maskable-512.png', 'images/pieces/wN.webp', 'images/pieces/bQ.webp', 'images/ornaments/crown.webp']) {
       assert.equal(await w.request(asset), `cached:./${asset}`);
     }
     assert.equal(await w.request('./manifest.json?v=2'), 'cached:./manifest.json');
+    // A page from before the WebP pieces, still open when this version takes over, keeps its pieces.
+    assert.equal(await w.request('images/pieces/wN.svg'), 'cached:./images/pieces/wN.webp');
+    assert.equal(await w.request('images/pieces/wP.svg'), 'cached:./images/pieces/wN.webp');
+    assert.equal(await w.request('images/pieces/bQ.svg'), 'cached:./images/pieces/bQ.webp');
+    assert.equal(await w.request('images/icon.svg'), 'cached:./images/icon-192.png');
     assert.ok(w.requests.every(request => request.cache === 'reload'), 'precache bypasses the HTTP cache');
     assert.equal(w.stores.has('static-cache-v1'), false);
     assert.equal(w.stores.has('unrelated-app'), true);

@@ -11,7 +11,7 @@
       name="description"
       content="Guide the knight to every safe square around the queen, in order, as quickly as possible."
     />
-    <meta name="theme-color" content="#070f20" />
+    <meta name="theme-color" content="#03142b" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Knight Puzzle" />
@@ -23,7 +23,7 @@
 
     <title>Knight Puzzle</title>
     <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
-    <link rel="icon" href="images/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="images/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
     <script>
       // A browser that may hold an ad-free token never paints the ad rail, so the board doesn't move
@@ -48,12 +48,11 @@
         z-index: 2147483647;
         display: grid;
         place-items: center;
-        background: #070f20;
+        background: #03142b;
       }
       #launch-icon {
         width: 128px;
         height: 128px;
-        background: #14182a;
       }
       #launch-name {
         position: absolute;
@@ -182,27 +181,14 @@
   </head>
   <body>
     <div id="launch" aria-hidden="true">
-      <!-- The helmet from images/icon.svg, inline so it needs no request. -->
-      <svg id="launch-icon" viewBox="0 0 512 512">
-        <g transform="translate(0 10)">
-          <clipPath id="launch-visor"><path d="M150 108Q256 62 362 108L370 300Q370 382 302 414Q256 430 210 414Q142 382 142 300Z"/></clipPath>
-          <g clip-path="url(#launch-visor)">
-            <path d="M120 40H256V196H120Z" fill="#d9e0e8"/><path d="M256 40H400V196H256Z" fill="#aab4c1"/>
-            <path d="M120 236H256V440H120Z" fill="#c6ced8"/><path d="M256 236H400V440H256Z" fill="#8995a5"/>
-            <path d="M120 236 256 236 256 440 120 300Z" fill="#d2d9e2"/><path d="M400 236 256 236 256 440 400 300Z" fill="#97a2b1"/>
-            <path d="M120 196H256V236H120Z" fill="#f2cf6b"/><path d="M256 196H400V236H256Z" fill="#c99a2e"/>
-          </g>
-          <path d="M236 104 256 84 256 418 236 412Z" fill="#f2cf6b"/><path d="M256 84 276 104 276 412 256 418Z" fill="#b8892a"/>
-          <g fill="#0b0d16"><path d="M166 208H228L224 224H170Z"/><path d="M284 208H346L342 224H288Z"/>
-            <path d="M178 270h12l-2 44h-8zM204 276h12l-2 50h-8zM322 270h12l-2 44h-8zM296 276h12l-2 50h-8z"/></g>
-        </g>
-      </svg>
+      <!-- The maskable icon (images/icon-maskable-512.png at 384px), inline so it needs no request. -->
+      <img id="launch-icon" alt="" src="data:image/webp;base64,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" />
       <span id="launch-name">Knight Around the Queen</span>
     </div>
     <div class="app" id="app">
       <header>
         <div class="brand">
-          <img src="images/icon.svg" alt="" />
+          <img src="images/icon-maskable-192.png" alt="" />
           <h1>Knight Puzzle</h1>
         </div>
         <div class="header-tools">
@@ -589,7 +575,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -597,7 +583,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -605,7 +591,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -613,7 +599,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -621,7 +607,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -629,7 +615,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -637,7 +623,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -645,7 +631,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -653,7 +639,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -661,7 +647,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -669,7 +655,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -677,7 +663,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -685,7 +671,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -693,7 +679,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -701,7 +687,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -709,12 +695,12 @@
               y="120"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <path
               d="M140 20V100H107"
               fill="none"
-              stroke="#f1d39a"
+              stroke="#ee4a1f"
               stroke-width="4"
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -723,7 +709,7 @@
             <path
               d="m114 93-8 7 8 7"
               fill="none"
-              stroke="#f1d39a"
+              stroke="#ee4a1f"
               stroke-width="3"
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -732,7 +718,7 @@
               cx="100"
               cy="100"
               r="14"
-              stroke="#f1d39a"
+              stroke="#ee4a1f"
               stroke-width="2"
               fill="none"
             />
@@ -753,7 +739,7 @@
             width="200"
             height="200"
             role="img"
-            aria-label="Queen attacks along eight straight rays: rows, columns, and diagonals. Blue squares between the rays are safe."
+            aria-label="Queen attacks along eight straight rays: rows, columns, and diagonals. Unmarked squares between the rays are safe."
           >
             <defs>
               <marker
@@ -765,8 +751,17 @@
                 markerHeight="5"
                 orient="auto"
               >
-                <path d="M0 0 8 4 0 8Z" fill="#f4b6bf" />
+                <path d="M0 0 8 4 0 8Z" fill="#ee4a1f" />
               </marker>
+              <!-- The board's queen-attacked hatching (styles.css), on each square color. -->
+              <pattern id="hatchLight" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="#f8ebd0" />
+                <rect width="2" height="6" fill="#ee4a1f" />
+              </pattern>
+              <pattern id="hatchDark" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="#071a31" />
+                <rect width="2" height="6" fill="#ee4a1f" />
+              </pattern>
             </defs>
             <rect
               class="help-square"
@@ -774,7 +769,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -782,7 +777,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -790,7 +785,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -798,7 +793,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -806,7 +801,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -814,7 +809,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -822,7 +817,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -830,7 +825,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#523e58"
+              fill="url(#hatchDark)"
             />
             <rect
               class="help-square"
@@ -838,7 +833,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -846,7 +841,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -854,7 +849,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -862,7 +857,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#523e58"
+              fill="url(#hatchDark)"
             />
             <rect
               class="help-square"
@@ -870,7 +865,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -878,7 +873,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#523e58"
+              fill="url(#hatchDark)"
             />
             <rect
               class="help-square"
@@ -886,7 +881,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -894,7 +889,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -902,7 +897,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -910,7 +905,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#523e58"
+              fill="url(#hatchDark)"
             />
             <rect
               class="help-square"
@@ -918,7 +913,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -926,7 +921,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -934,7 +929,7 @@
               y="160"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -942,7 +937,7 @@
               y="160"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -950,7 +945,7 @@
               y="160"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <rect
               class="help-square"
@@ -958,7 +953,7 @@
               y="160"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -966,13 +961,13 @@
               y="160"
               width="40"
               height="40"
-              fill="#76566e"
+              fill="url(#hatchLight)"
             />
             <path
               class="queen-ray"
               d="M124 100 L188 100"
               fill="none"
-              stroke="#f4b6bf"
+              stroke="#ee4a1f"
               stroke-width="2.5"
               stroke-linecap="round"
               marker-end="url(#queenRayTip)"
@@ -981,7 +976,7 @@
               class="queen-ray"
               d="M76 100 L12 100"
               fill="none"
-              stroke="#f4b6bf"
+              stroke="#ee4a1f"
               stroke-width="2.5"
               stroke-linecap="round"
               marker-end="url(#queenRayTip)"
@@ -990,7 +985,7 @@
               class="queen-ray"
               d="M100 124 L100 188"
               fill="none"
-              stroke="#f4b6bf"
+              stroke="#ee4a1f"
               stroke-width="2.5"
               stroke-linecap="round"
               marker-end="url(#queenRayTip)"
@@ -999,7 +994,7 @@
               class="queen-ray"
               d="M100 76 L100 12"
               fill="none"
-              stroke="#f4b6bf"
+              stroke="#ee4a1f"
               stroke-width="2.5"
               stroke-linecap="round"
               marker-end="url(#queenRayTip)"
@@ -1008,7 +1003,7 @@
               class="queen-ray"
               d="M124 124 L188 188"
               fill="none"
-              stroke="#f4b6bf"
+              stroke="#ee4a1f"
               stroke-width="2.5"
               stroke-linecap="round"
               marker-end="url(#queenRayTip)"
@@ -1017,7 +1012,7 @@
               class="queen-ray"
               d="M124 76 L188 12"
               fill="none"
-              stroke="#f4b6bf"
+              stroke="#ee4a1f"
               stroke-width="2.5"
               stroke-linecap="round"
               marker-end="url(#queenRayTip)"
@@ -1026,7 +1021,7 @@
               class="queen-ray"
               d="M76 124 L12 188"
               fill="none"
-              stroke="#f4b6bf"
+              stroke="#ee4a1f"
               stroke-width="2.5"
               stroke-linecap="round"
               marker-end="url(#queenRayTip)"
@@ -1035,17 +1030,17 @@
               class="queen-ray"
               d="M76 76 L12 12"
               fill="none"
-              stroke="#f4b6bf"
+              stroke="#ee4a1f"
               stroke-width="2.5"
               stroke-linecap="round"
               marker-end="url(#queenRayTip)"
             />
             <image data-help-piece="bQ" x="80" y="80" width="40" height="40" />
-            <circle cx="180" cy="60" r="12" fill="#102039" />
+            <circle cx="180" cy="60" r="12" fill="#03142b" stroke="#f8ebd0" stroke-width="1.5" />
             <path
               d="m174 60 4 4 8-9"
               fill="none"
-              stroke="#c1dcbd"
+              stroke="#f8ebd0"
               stroke-width="3"
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -1074,7 +1069,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -1082,7 +1077,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -1090,7 +1085,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -1098,7 +1093,7 @@
               y="0"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -1106,7 +1101,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -1114,7 +1109,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -1122,7 +1117,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -1130,7 +1125,7 @@
               y="40"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -1138,7 +1133,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -1146,7 +1141,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -1154,7 +1149,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -1162,7 +1157,7 @@
               y="80"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -1170,7 +1165,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -1178,7 +1173,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <rect
               class="help-square"
@@ -1186,7 +1181,7 @@
               y="120"
               width="40"
               height="40"
-              fill="#2b496e"
+              fill="#071a31"
             />
             <rect
               class="help-square"
@@ -1194,12 +1189,12 @@
               y="120"
               width="40"
               height="40"
-              fill="#8eaed2"
+              fill="#f8ebd0"
             />
             <path
               d="M140 20C140 55 130 92 100 100"
               fill="none"
-              stroke="#e5c78f"
+              stroke="#ee4a1f"
               stroke-width="4"
               stroke-linecap="round"
             />
@@ -1207,17 +1202,18 @@
               cx="100"
               cy="100"
               r="14"
-              fill="#193253"
-              stroke="#85b5ff"
+              fill="#03142b"
+              stroke="#f8ebd0"
               stroke-width="2"
             />
             <text
               x="100"
               y="105"
               text-anchor="middle"
-              fill="#dfecff"
+              fill="#f8ebd0"
               font-size="14"
-              font-family="system-ui"
+              font-weight="700"
+              font-family="'Noto Serif', 'Liberation Serif', 'Times New Roman', serif"
             >
               1
             </text>

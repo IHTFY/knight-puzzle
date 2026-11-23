@@ -310,10 +310,16 @@ function screen(size = [300, 250]) {
   const aside = {
     box: railBox(),
     fits: true,
+    // Whether the result and the ad fit once the crown above the title is left out.
+    fitsCrownless: false,
+    classList: Object.assign(new Set(), { remove(name) { this.delete(name); } }),
     querySelector: () => aside.box,
     clientHeight: 400,
     clientWidth: 360,
-    get scrollHeight() { return aside.fits || aside.box.parentElement.hidden ? 400 : 600; },
+    get scrollHeight() {
+      const crownless = aside.fitsCrownless && aside.classList.has('crownless');
+      return aside.fits || crownless || aside.box.parentElement.hidden ? 400 : 600;
+    },
     scrollWidth: 360,
   };
   return aside;
@@ -430,6 +436,33 @@ test('a results box the window cannot hold is left out and asked for once the wi
   await tick();
   assert.deepEqual(shownKeys(), [['300x250', 'k']]);
   assert.equal(shown[0][0], fresh);
+});
+
+test('the crown gives way to a results ad that fits only without it, and comes back once the window holds both', async () => {
+  adFreeGone();
+  const results = screen();
+  results.fits = false;
+  results.fitsCrownless = true;
+  context.showScreenAd('results', results, 'k');
+  const fresh = results.box.next;
+  assert.equal(fresh.parentElement.hidden, false);
+  assert.equal(results.classList.has('crownless'), true);
+  added[0].fire('load');
+  await tick();
+  assert.deepEqual(shownKeys(), [['300x250', 'k']]);
+  results.fits = true;
+  fire('resize');
+  assert.equal(results.classList.has('crownless'), false);
+  assert.equal(fresh.parentElement.hidden, false);
+});
+
+test('where the ad does not fit even without the crown, the crown stays and the ad is left out', () => {
+  adFreeGone();
+  const results = screen();
+  results.fits = false;
+  context.showScreenAd('results', results, 'k');
+  assert.equal(results.box.next.parentElement.hidden, true);
+  assert.equal(results.classList.has('crownless'), false);
 });
 
 test('a placed results ad is left out while the window cannot hold it, and comes back without a new request', async () => {

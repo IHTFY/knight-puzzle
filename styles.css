@@ -3,16 +3,20 @@
 }
 :root {
   color-scheme: dark;
-  --bg: #070f20;
-  --panel: #0e1b32;
-  --line: #203554;
-  --text: #e7effc;
-  --muted: #92a6c5;
-  --accent: #78a8f6;
-  --light: #8eafd9;
-  --dark: #2b4971;
-  --target: #6598eb;
-  --danger-square: #243044;
+  /* Heraldic ink: navy ground, cream ink and rules, a vermilion ring. Measured from the board mockup. */
+  --bg: #03142b;
+  --panel: #03142b;
+  --line: #f8ebd0;
+  --hair: #f8ebd033;
+  --text: #f8ebd0;
+  --muted: #aeaa9e;
+  --accent: #ee4a1f;
+  --light: #f8ebd0;
+  --dark: #071a31;
+  --reset: #691810;
+  --serif: 'Noto Serif', 'Liberation Serif', 'Times New Roman', Times, serif;
+  /* A second, inner rule one gap inside a 1px border. */
+  --double: inset 0 0 0 2px var(--bg), inset 0 0 0 3px var(--line);
 }
 html,
 body {
@@ -23,12 +27,7 @@ body {
   overscroll-behavior: none;
   background: var(--bg);
   color: var(--text);
-  font:
-    14px/1.4 system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font: 14px/1.4 var(--serif);
 }
 button {
   font: inherit;
@@ -52,7 +51,6 @@ button:hover {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 24px;
-  background: radial-gradient(ellipse at 80% 0%, #10234455, transparent 60%);
 }
 header {
   display: flex;
@@ -69,12 +67,15 @@ header {
   width: 40px;
   height: 40px;
   flex: none;
+  border-radius: 18.75%;
 }
 .brand h1 {
   margin: 0;
   font-size: 20px;
-  letter-spacing: -0.6px;
-  font-weight: 650;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
 }
 .next {
   display: flex;
@@ -82,15 +83,22 @@ header {
   gap: 12px;
   background: var(--panel);
   border: 1px solid var(--line);
+  box-shadow: var(--double);
   padding: 8px 14px;
-  border-radius: 12px;
-  color: var(--muted);
+  border-radius: 8px;
+  color: var(--text);
   font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .next strong {
   font-size: 21px;
-  font-weight: 650;
-  color: var(--accent);
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
   line-height: 1.2;
 }
 .layout {
@@ -112,10 +120,9 @@ header {
   width: min(100cqw, 100cqh);
   aspect-ratio: 1;
   padding: clamp(8px, 1.1vw, 16px);
-  border: 1px solid #2a4061;
+  border: 1.5px solid var(--line);
   background: var(--panel);
-  border-radius: 23px;
-  box-shadow: 0 18px 65px #02071066;
+  border-radius: 6px;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -132,18 +139,22 @@ header {
 }
 .metric {
   background: var(--panel);
-  border: 1px solid #20355488;
-  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: var(--double);
+  border-radius: 8px;
   padding: 19px;
 }
 .label {
   font-size: 12px;
-  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
 }
 .number {
   font-size: 35px;
-  font-weight: 550;
-  letter-spacing: -1px;
+  font-weight: 700;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
   margin-top: 7px;
@@ -162,7 +173,7 @@ header {
 }
 .progress {
   height: 3px;
-  background: var(--line);
+  background: var(--hair);
   border-radius: 4px;
   margin-top: 14px;
   overflow: hidden;
@@ -182,16 +193,22 @@ header {
 .action {
   height: 46px;
   border: 1px solid var(--line);
+  box-shadow: var(--double);
   background: var(--panel);
   color: var(--text);
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
+/* Cream plate with a navy inner rule. */
 .action.primary {
-  background: #326fd0;
-  border-color: #407cd7;
-  color: #f4f7ff;
+  background: var(--light);
+  color: var(--bg);
+  box-shadow:
+    inset 0 0 0 2px var(--light),
+    inset 0 0 0 3px var(--bg);
 }
 .sr-only {
   position: absolute;
@@ -208,14 +225,15 @@ header {
   background: var(--panel);
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  box-shadow: var(--double);
+  border-radius: 8px;
   width: min(480px, calc(100% - 24px));
   padding: 22px;
   max-height: 85dvh;
   overflow: hidden;
 }
 .dialog::backdrop {
-  background: #000b;
+  background: #010814cc;
   backdrop-filter: blur(4px);
 }
 .dialog-head {
@@ -234,7 +252,7 @@ header {
   border: 1px solid var(--line);
   color: var(--text);
   background: transparent;
-  border-radius: 10px;
+  border-radius: 50%;
 }
 .table-wrap {
   max-height: calc(85dvh - 100px);
@@ -251,7 +269,7 @@ th,
 td {
   text-align: left;
   padding: 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--hair);
 }
 th {
   color: var(--muted);
@@ -284,7 +302,7 @@ tbody tr.done td:first-child {
   .next {
     padding: 6px 10px;
     gap: 8px;
-    border-radius: 10px;
+    border-radius: 7px;
     font-size: 11px;
   }
   .next strong {
@@ -300,7 +318,7 @@ tbody tr.done td:first-child {
   }
   .board-wrap {
     padding: 8px;
-    border-radius: 18px;
+    border-radius: 5px;
   }
   .panel {
     gap: 10px;
@@ -322,7 +340,7 @@ tbody tr.done td:first-child {
   }
   .metric {
     padding: 12px 13px;
-    border-radius: 13px;
+    border-radius: 7px;
   }
   .timer {
     grid-column: auto;
@@ -334,7 +352,6 @@ tbody tr.done td:first-child {
   .timer .number {
     font-size: 26px;
     margin-top: 4px;
-    letter-spacing: -0.6px;
   }
   .number small {
     font-size: 12px;
@@ -416,7 +433,7 @@ tbody tr.done td:first-child {
   }
   .board-wrap {
     padding: 8px;
-    border-radius: 18px;
+    border-radius: 5px;
   }
 }
 
@@ -433,7 +450,7 @@ tbody tr.done td:first-child {
   display: block;
 }
 [aria-pressed='true'] .eye {
-  color: var(--accent);
+  color: var(--text);
 }
 .interactive {
   text-align: left;
@@ -453,7 +470,7 @@ tbody tr.done td:first-child {
 }
 .interactive:hover,
 .next:hover {
-  border-color: #416294;
+  background: #f8ebd00f;
 }
 .interactive[aria-pressed='false'] .number#timerDisplay,
 .next[aria-pressed='false'] strong {
@@ -471,9 +488,7 @@ tbody tr.done td:first-child {
   font-weight: 500;
 }
 .vision[aria-pressed='true'] {
-  background: #193251;
-  border-color: #3b6291;
-  color: #b9d3fc;
+  background: #f8ebd024;
 }
 .timer .number {
   white-space: nowrap;
@@ -540,7 +555,7 @@ tbody tr.done td:first-child {
   width: 44px;
   padding: 0;
   min-width: 44px;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 .piece-icon {
   width: 23px;
@@ -550,7 +565,7 @@ tbody tr.done td:first-child {
   color: var(--muted);
 }
 .vision[aria-pressed='true'] {
-  color: var(--accent);
+  color: var(--text);
 }
 .stats-legend {
   display: flex;
@@ -627,10 +642,12 @@ td.slow-split {
 .chessboard-63f37 {
   width: 100%;
 }
+/* The inner rule of the board's double frame, hugging the squares. */
 .board-b72b1 {
   border: 0;
   overflow: hidden;
-  border-radius: 11px;
+  border-radius: 1px;
+  box-shadow: 0 0 0 2px var(--line);
   margin: auto;
 }
 .clearfix-7da63 {
@@ -652,12 +669,12 @@ td.slow-split {
   color: var(--light);
 }
 .piece-417db {
-  filter: drop-shadow(0 3px 2px #0005);
+  filter: drop-shadow(0 2px 1.5px #03142b55);
 }
 .notation-322f9 {
   position: absolute;
   font-size: clamp(9px, 0.8vw, 12px);
-  font-weight: 600;
+  font-weight: 700;
   pointer-events: none;
 }
 .alpha-d2270 {
@@ -668,51 +685,55 @@ td.slow-split {
   top: 4px;
   left: 5px;
 }
-.square-55d63.queen-attacked {
-  background: var(--danger-square);
-  color: var(--muted);
-}
+/* Squares in the queen's line of fire keep their color under vermilion hatching, opaque so it
+   keeps 3:1 contrast with both square colors. */
 .queen-attacked:before {
   content: '';
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
     135deg,
-    transparent,
-    transparent 7px,
-    #e4a3a310 7px,
-    #e4a3a310 8px
+    transparent 0 4px,
+    var(--accent) 4px 6px
   );
   pointer-events: none;
 }
+/* A hollow ring in the square's opposite ink. */
 .knight-available:before {
   content: '';
   position: absolute;
-  width: 17%;
-  height: 17%;
-  left: 41.5%;
-  top: 41.5%;
+  width: 21%;
+  height: 21%;
+  left: 39.5%;
+  top: 39.5%;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 5px #08121e25;
+  border: clamp(2px, 0.22vw, 3px) solid currentColor;
+  box-sizing: border-box;
   pointer-events: none;
 }
-.square-55d63.next-target {
-  background: var(--target);
-  color: #12386b;
-}
+/* The vermilion ring: 72% of the square across, its stroke a tenth of the square. */
 .next-target:after {
   content: '';
   position: absolute;
-  inset: 20%;
-  border: 2px solid currentColor;
+  inset: 14%;
   border-radius: 50%;
-  opacity: 0.7;
+  background: radial-gradient(
+    closest-side,
+    transparent calc(72% - 1px),
+    var(--accent) 72% calc(100% - 1px),
+    transparent
+  );
   pointer-events: none;
+}
+/* Forced colors drop gradients, so the ring becomes a border there. */
+@media (forced-colors: active) {
+  .next-target:after {
+    border: clamp(3px, 0.6vw, 6px) solid Highlight;
+  }
 }
 .highlight1-32417,
 .highlight2-9c5d2 {
-  box-shadow: inset 0 0 0 2px #e7effc80;
+  box-shadow: inset 0 0 0 2px #ee4a1f80;
 }
 .square-55d63:focus-visible {
   outline: 3px solid var(--accent);
@@ -731,7 +752,7 @@ td.slow-split {
 }
 @media (max-width: 760px) and (orientation: portrait) {
   .board-b72b1 {
-    border-radius: 9px;
+    border-radius: 1px;
   }
   .notation-322f9 {
     font-size: 9px;
@@ -769,9 +790,7 @@ td.slow-split {
   padding: 4px 9px;
 }
 .route-button[aria-pressed='true'] {
-  color: #e0c598;
-  background: #302a252e;
-  border-color: #6f6250;
+  background: #ee4a1f2e;
 }
 .route-icon {
   width: 18px;
@@ -897,16 +916,16 @@ td {
 }
 
 /* As wide as its word, so larger text widens the button and its column. */
+/* A vermilion-lacquer plate with a cream inner rule. */
 .reset-button {
   width: auto;
   padding: 0 3px;
-  background: #341e2b;
-  border-color: #754252;
-  color: #f3a7b2;
-}
-.reset-button:hover {
-  background: #472635;
-  border-color: #9c5368;
+  background: var(--reset);
+  border-color: var(--reset);
+  color: var(--text);
+  box-shadow:
+    inset 0 0 0 2px var(--reset),
+    inset 0 0 0 3px #f8ebd0b3;
 }
 .reset-confirm {
   width: min(370px, calc(100% - 28px));
@@ -928,8 +947,12 @@ td {
   gap: 10px;
 }
 .history-buttons #reset {
-  font-size: 11px;
+  font-size: 13px;
   padding: 0;
+  /* Small capitals fit the 44px button where full capitals touch its rule. */
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-variant-caps: all-small-caps;
 }
 
 #boardContainer {
@@ -940,16 +963,18 @@ td {
   z-index: 5;
 }
 .flow-step {
-  fill: #f6f4df;
+  fill: var(--text);
   font-size: 20px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
-  font-family: system-ui, sans-serif;
+  font-family: var(--serif);
 }
 .flow-step-bg {
-  fill: #102039;
-  opacity: 0.9;
+  fill: var(--bg);
+  stroke: var(--line);
+  stroke-width: 1.5px;
+  opacity: 0.92;
 }
 
 .header-tools {
@@ -966,12 +991,11 @@ td {
   background: transparent;
   border: 0;
   border-radius: 8px;
-  color: #90a8cc;
+  color: var(--text);
   cursor: pointer;
 }
 .info-button:hover {
-  background: #142746;
-  color: #dfebff;
+  background: #f8ebd01a;
 }
 .info-button svg {
   width: 21px;
@@ -980,7 +1004,7 @@ td {
 .info-button:focus-visible,
 .stat-info:focus-visible,
 .stat-modifier:focus-visible {
-  outline: 2px solid #80adf3;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .how-to {
@@ -1006,8 +1030,8 @@ td {
 }
 .stat-info .tiny-info {
   font-size: 9px;
-  color: #8aa2c4;
-  border: 1px solid #617798;
+  color: var(--muted);
+  border: 1px solid var(--muted);
   border-radius: 50%;
   width: 11px;
   height: 11px;
@@ -1053,14 +1077,14 @@ td {
   margin: 0;
   width: min(280px, calc(100vw - 24px));
   padding: 14px 16px;
-  background: #14243c;
-  color: #dce8fb;
-  border: 1px solid #3a5478;
-  border-radius: 12px;
-  box-shadow: 0 10px 35px #0007;
-  font:
-    13px/1.5 system-ui,
-    sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow:
+    var(--double),
+    0 10px 35px #0007;
+  font: 13px/1.5 var(--serif);
 }
 .stat-popover::backdrop {
   background: transparent;
@@ -1079,13 +1103,13 @@ td {
 }
 .stat-popover p {
   margin: 0;
-  color: #b8cbe4;
+  color: #ddd3bd;
   font-size: 12px;
 }
 .stat-popover button {
   border: 0;
   background: transparent;
-  color: #a8bedb;
+  color: var(--muted);
   font-size: 16px;
   width: 24px;
   height: 24px;
@@ -1154,7 +1178,7 @@ td {
   cursor: grabbing;
 }
 .help-carousel:focus-visible {
-  outline: 2px solid #80adf3;
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: 10px;
 }
@@ -1172,7 +1196,8 @@ td {
   height: auto;
   aspect-ratio: 1;
   margin: 0 auto 18px;
-  border-radius: 12px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px var(--line);
   overflow: hidden;
   pointer-events: none;
 }
@@ -1181,7 +1206,7 @@ td {
   min-height: 40px;
   text-align: center;
   margin: 0 auto;
-  color: #b8cbe4;
+  color: #ddd3bd;
   font-size: 14px;
   line-height: 1.5;
   padding: 0 8px;
@@ -1224,17 +1249,17 @@ td {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #3d5577;
+  background: #f8ebd04d;
   transition:
     background 0.15s,
     transform 0.15s;
 }
 .help-dot[aria-current='true']::after {
-  background: #9bc2fa;
+  background: var(--text);
   transform: scale(1.2);
 }
 .help-dot:focus-visible {
-  outline: 2px solid #80adf3;
+  outline: 2px solid var(--accent);
 }
 .how-to {
   overflow-x: hidden;
@@ -1280,7 +1305,7 @@ td.split-cell::before {
   top: 4px;
   bottom: 4px;
   width: var(--split-base, var(--split-fill, 0%));
-  background: #76a4ed24;
+  background: #f8ebd01f;
   border-radius: 4px;
   z-index: -1;
   pointer-events: none;
@@ -1326,9 +1351,45 @@ td.split-cell.slow-split::before {
   overflow: auto;
   text-align: center;
 }
+/* Laurels flank the title and a crown sits above it (cut from the result-card mockup). The laurels
+   sit in the title's side padding, so a title too wide for the window wraps instead of pushing
+   them out of it, and they hang below its line box, so they add no height. */
 .results h2 {
+  position: relative;
+  max-width: 100%;
   margin: 0;
-  font-size: 22px;
+  padding: 32px 38px 0;
+  font-size: 26px;
+  line-height: 1.2;
+  background: url('images/ornaments/crown.webp') center top / 40px 26px no-repeat;
+}
+.results h2::before,
+.results h2::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  width: 34px;
+  height: 46px;
+  background: center / contain no-repeat;
+}
+.results h2::before {
+  left: 0;
+  background-image: url('images/ornaments/laurel-left.webp');
+}
+.results h2::after {
+  right: 0;
+  background-image: url('images/ornaments/laurel-right.webp');
+}
+/* Short windows leave out the crown, and main.js leaves it out wherever the ad needs its height. */
+@media (max-height: 575px) {
+  .results h2 {
+    padding-top: 0;
+    background: none;
+  }
+}
+.results.crownless h2 {
+  padding-top: 0;
+  background: none;
 }
 .results p {
   margin: 0;
@@ -1386,6 +1447,17 @@ td.split-cell.slow-split::before {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
   width: min(100%, 360px);
+}
+/* Both are cream plates, as in the result-card mockup. */
+.results-actions .action {
+  background: var(--light);
+  color: var(--bg);
+  box-shadow:
+    inset 0 0 0 2px var(--light),
+    inset 0 0 0 3px var(--bg);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 15px;
 }
 .app.on-results .header-tools {
   visibility: hidden;

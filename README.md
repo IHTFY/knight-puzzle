@@ -31,15 +31,15 @@ After changing any precached file (or the list), run `npm run stamp`; the tests 
 if the stamp is stale. Installed copies download the new version in the background
 and switch to it at the next idle moment (page load or Reset), never mid-game.
 
-Icons are drawn in `images/icon.svg` (rounded) and `images/icon-maskable.svg`
-(full-bleed, helm inside the maskable safe zone). The PNGs, `favicon.ico`, and
-`images/screenshots/` are rendered from those and the live app with headless Chromium.
+The art (icons, the knight and queen in `images/pieces/`, and the result ornaments in
+`images/ornaments/`) is cut from the game's own concept art as bitmaps. The maskable
+icons keep the crest inside the maskable safe zone. `images/screenshots/` are taken
+from the live app with headless Chromium.
 
 ## Vendored dependencies
 
 - jQuery 3.7.1: <https://code.jquery.com/jquery-3.7.1.min.js>
 - chessboard.js 1.0.0: <https://chessboardjs.com/download>
-- Original Alpha pieces: [attribution and terms](licenses/alpha.md).
 
 The interface uses custom CSS and JavaScript. chessboard.js renders the board and
 handles dragging. It requires jQuery. Preserve upstream license headers when
@@ -70,7 +70,7 @@ The information icon opens three illustrated instructions. Swipe, click a dot, o
 use arrow keys to change slides. Stats headers and highlight badges explain their
 meaning on hover, keyboard focus, or tap.
 
-Stats marks extra moves in amber. Split times have subtle blue background bars
+Stats marks extra moves in amber. Split times have subtle cream background bars
 scaled to the longest completed split, with muted red showing time above the slow
 cutoff. Zero and pending splits have no fill. Slow splits use seconds per optimal
 move and compare with the median across completed targets.
