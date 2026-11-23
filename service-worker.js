@@ -1,7 +1,7 @@
 'use strict';
 
 // Content hash of FILES_TO_CACHE; `npm run stamp` updates it and `npm test` fails if it is stale.
-const CACHE_VERSION = '096f81a41366';
+const CACHE_VERSION = '8b11e87f11b9';
 const CACHE_PREFIX = 'knight-puzzle-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const FILES_TO_CACHE = [
@@ -12,16 +12,16 @@ const FILES_TO_CACHE = [
   './styles.css',
   './manifest.json',
   './favicon.ico',
-  './images/icon.svg',
   './images/icon-192.png',
   './images/icon-512.png',
   './images/icon-maskable-192.png',
   './images/icon-maskable-512.png',
   './images/apple-touch-icon.png',
-  './images/pieces/wN.svg',
-  './images/pieces/bQ.svg',
-  // chessboard.js initializes its hidden drag image with a white pawn.
-  './images/pieces/wP.svg',
+  './images/pieces/wN.webp',
+  './images/pieces/bQ.webp',
+  './images/ornaments/crown.webp',
+  './images/ornaments/laurel-left.webp',
+  './images/ornaments/laurel-right.webp',
 ];
 const assetURLs = new Set(FILES_TO_CACHE.map(path => new URL(path, self.registration.scope).href));
 

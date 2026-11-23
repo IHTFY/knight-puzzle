@@ -362,7 +362,7 @@ function routeForPosition(source, target) {
 }
 
 const flowOptions = {
-  style: 'amber',
+  style: 'vermilion',
   speed: 160,
   curve: 0.7,
   width: 10,
@@ -564,7 +564,8 @@ const SOLVED_DELAY_MS = 500;
 
 const config = {
   draggable: true,
-  pieceTheme: 'images/pieces/{piece}.svg',
+  // Only the knight and queen are drawn; chessboard.js also asks for a hidden white-pawn drag image.
+  pieceTheme: (piece) => `images/pieces/${piece === 'bQ' ? 'bQ' : 'wN'}.webp`,
   position: initialPosition,
   onDragStart: (source, piece) => {
     if (finished || piece !== 'wN') return false;
@@ -890,8 +891,8 @@ function flowPalette(style) {
         : style === 'white'
           ? `rgb(${Math.round(124 + 131 * pulse)},${Math.round(167 + 88 * pulse)},${Math.round(222 + 33 * pulse)})`
           : style === 'still'
-            ? '#e5c78f'
-            : `rgb(${Math.round(197 + 58 * pulse)},${Math.round(146 + 105 * pulse)},${Math.round(63 + 172 * pulse)})`,
+            ? '#ee4a1f'
+            : `rgb(${Math.round(238 + 17 * pulse)},${Math.round(74 + 96 * pulse)},${Math.round(31 + 89 * pulse)})`,
     );
   }
   return (flowPalettes[style] = colors);
@@ -1005,7 +1006,7 @@ function renderRoute() {
         .reverse()
         .join('')
     : '';
-  overlay.innerHTML = `<path id="flowTrack" d="${d}" fill="none" stroke="#d8bb7f" stroke-opacity=".55" stroke-width="${flowOptions.width}" stroke-linecap="round" stroke-linejoin="round"/><g id="flowSegments" fill="none" stroke-width="${flowOptions.width}" stroke-linecap="round" stroke-linejoin="round">${paths}</g><g id="flowLabels">${labels}</g>`;
+  overlay.innerHTML = `<path id="flowTrack" d="${d}" fill="none" stroke="#ee4a1f" stroke-opacity=".35" stroke-width="${flowOptions.width}" stroke-linecap="round" stroke-linejoin="round"/><g id="flowSegments" fill="none" stroke-width="${flowOptions.width}" stroke-linecap="round" stroke-linejoin="round">${paths}</g><g id="flowLabels">${labels}</g>`;
   const elements = overlay.querySelectorAll('#flowSegments path');
   flowScene = {
     segments: segments.map((segment, i) => ({
@@ -1128,7 +1129,7 @@ window.addEventListener('resize', () => {
 document
   .querySelectorAll('[data-help-piece]')
   .forEach((img) =>
-    img.setAttribute('href', `images/pieces/${img.dataset.helpPiece}.svg`),
+    img.setAttribute('href', `images/pieces/${img.dataset.helpPiece}.webp`),
   );
 howTo.addEventListener('click', (e) => {
   if (e.target === howTo) {
@@ -1345,7 +1346,7 @@ globalThis.launchExit?.((overlay) => {
   const duration = 1100;
   const animations = [
     overlay.animate(
-      { backgroundColor: ['#070f20', 'rgb(7 15 32 / 0)'] },
+      { backgroundColor: ['#03142b', 'rgb(3 20 43 / 0)'] },
       { duration: 700, delay: 250, easing: 'ease-in', fill: 'forwards' },
     ),
     document

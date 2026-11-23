@@ -9,19 +9,13 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#070f20",
-  "theme_color": "#070f20",
+  "background_color": "#03142b",
+  "theme_color": "#03142b",
   "categories": [
     "games",
     "education"
   ],
   "icons": [
-    {
-      "src": "images/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
     {
       "src": "images/icon-192.png",
       "sizes": "192x192",
