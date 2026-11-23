@@ -731,6 +731,12 @@ td.slow-split {
   );
   pointer-events: none;
 }
+/* Forced colors drop gradients, so the ring becomes a border there. */
+@media (forced-colors: active) {
+  .next-target:after {
+    border: clamp(3px, 0.6vw, 6px) solid Highlight;
+  }
+}
 .highlight1-32417,
 .highlight2-9c5d2 {
   box-shadow: inset 0 0 0 2px #ee4a1f80;
@@ -1378,8 +1384,9 @@ td.split-cell.slow-split::before {
   left: calc(100% + 4px);
   background-image: url('images/ornaments/laurel-right.webp');
 }
-/* Short windows keep the title on one line with no crown, leaving the height for the ad. */
-@media (max-height: 575px) {
+/* Short windows leave out the crown, keeping the height for the ad (the 300x250 unit needs about
+   32px more than these windows have with it). */
+@media (max-height: 600px) {
   .results h2 {
     padding-top: 0;
     background: none;

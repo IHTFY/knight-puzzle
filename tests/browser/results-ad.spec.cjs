@@ -78,6 +78,7 @@ async function measure(page) {
 
 const sizes = [
   { width: 360, height: 640, ad: '300x250' },
+  { width: 390, height: 576, ad: '300x250' },
   { width: 390, height: 750, ad: '300x250' },
   { width: 412, height: 800, ad: '300x250' },
   { width: 1280, height: 800, ad: '300x250' },
