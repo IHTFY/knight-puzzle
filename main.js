@@ -1354,9 +1354,6 @@ globalThis.launchExit?.((overlay) => {
       { backgroundColor: ['#03142b', 'rgb(3 20 43 / 0)'] },
       { duration: 700, delay: 250, easing: 'ease-in', fill: 'forwards' },
     ),
-    document
-      .getElementById('launch-name')
-      .animate({ opacity: [1, 0] }, { duration: 150, fill: 'forwards' }),
     icon.animate(
       [
         { transform: 'none', borderRadius: '0%', easing: 'ease-in-out' },
