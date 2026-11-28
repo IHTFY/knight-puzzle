@@ -97,6 +97,24 @@ test('a tap skips to the end', async ({ page }) => {
   await expect(page.locator('.brand img')).toHaveCSS('opacity', '1');
 });
 
+test('a click with no press before it, as a screen reader sends, only skips the launch', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 722 });
+  await installedApp(page, { hold: 'start' });
+  await page.goto('/', { waitUntil: 'commit' });
+  await page.waitForFunction(() => window.launchHeld);
+  const control = page.locator('#queenVision');
+  const before = await control.getAttribute('aria-pressed');
+  // A click from script has no press count (detail 0), like an assistive technology's.
+  await control.evaluate((button) => button.click());
+  await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
+  expect(await launching(page)).toBe(false);
+  await expect(control).toHaveAttribute('aria-pressed', before);
+
+  // The next click is a real one.
+  await control.evaluate((button) => button.click());
+  await expect(control).not.toHaveAttribute('aria-pressed', before);
+});
+
 test.describe('on a touch screen', () => {
   test.use({ hasTouch: true });
 
