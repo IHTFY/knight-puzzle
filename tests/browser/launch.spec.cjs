@@ -109,6 +109,8 @@ test('a click with no press before it, as a screen reader sends, only skips the 
   await expect(page.locator('#launch')).toHaveCount(0, { timeout: 1000 });
   expect(await launching(page)).toBe(false);
   await expect(control).toHaveAttribute('aria-pressed', before);
+  // The skip still counts as the player's first input.
+  expect(await page.evaluate(() => Promise.race([firstInput.then(() => true), new Promise((r) => setTimeout(r, 100, false))]))).toBe(true);
 
   // The next click is a real one.
   await control.evaluate((button) => button.click());

@@ -159,9 +159,9 @@ function clearScreenAd(screen) {
   renewAdBox(screen.querySelector('.ad-box'));
 }
 
-// The player's first tap or key press.
+// The player's first tap, key press, or screen-reader click.
 const firstInput = new Promise((resolve) => {
-  for (const type of ['pointerdown', 'keydown'])
+  for (const type of ['pointerdown', 'keydown', 'click'])
     window.addEventListener(type, resolve, { once: true, capture: true });
 });
 
