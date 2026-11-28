@@ -71,7 +71,7 @@
         let animations;
         let skipped = false;
         let ended = false;
-        // A tap or key only skips to the end: nothing behind the copy reacts.
+        // A tap, key, or click only skips to the end: nothing behind the copy reacts. A screen reader clicks alone.
         // Before the exit starts, the copy goes as soon as the game is ready.
         // Other listeners on window itself still run, such as the game's wait for a first input.
         const skip = (event) => {
@@ -119,7 +119,7 @@
           skipped = true;
           animations?.forEach((a) => a.finish());
         };
-        const skippers = ['pointerdown', 'keydown'];
+        const skippers = ['pointerdown', 'keydown', 'click'];
         const end = () => {
           ended = true;
           clearTimeout(fallback);
